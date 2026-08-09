@@ -1,0 +1,758 @@
+{
+ "markor|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 41
+ },
+ "markor|hybrid|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 7,
+  "n_cmds": 48
+ },
+ "markor|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 8,
+  "n_cmds": 49
+ },
+ "markor|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 5,
+  "n_cmds": 50
+ },
+ "markor|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 5,
+  "n_cmds": 43
+ },
+ "markor|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 20
+ },
+ "amaze|hybrid|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 74
+ },
+ "amaze|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 5,
+  "n_cmds": 76
+ },
+ "amaze|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 10,
+  "n_cmds": 78
+ },
+ "amaze|bare|1": {
+  "writes": 2,
+  "intents": 0,
+  "disk_reads": 6,
+  "n_cmds": 47
+ },
+ "amaze|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 40
+ },
+ "amaze|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 10
+ },
+ "fossify_notes|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 44
+ },
+ "fossify_notes|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 43
+ },
+ "fossify_notes|hybrid|3": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 51
+ },
+ "fossify_notes|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 31
+ },
+ "fossify_notes|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 41
+ },
+ "fossify_notes|bare|3": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 9
+ },
+ "fossify_contacts|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 54
+ },
+ "fossify_contacts|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 50
+ },
+ "fossify_contacts|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 43
+ },
+ "fossify_contacts|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 42
+ },
+ "fossify_contacts|bare|2": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 47
+ },
+ "fossify_contacts|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 63
+ },
+ "fossify_gallery|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 4,
+  "n_cmds": 53
+ },
+ "fossify_gallery|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 4,
+  "n_cmds": 44
+ },
+ "fossify_gallery|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 42
+ },
+ "fossify_gallery|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 42
+ },
+ "fossify_gallery|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 42
+ },
+ "fossify_gallery|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 46
+ },
+ "ankidroid|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 52
+ },
+ "ankidroid|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 55
+ },
+ "ankidroid|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 44
+ },
+ "ankidroid|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 43
+ },
+ "ankidroid|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 47
+ },
+ "ankidroid|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 48
+ },
+ "wikipedia|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 44
+ },
+ "wikipedia|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 45
+ },
+ "wikipedia|hybrid|3": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 4,
+  "n_cmds": 51
+ },
+ "wikipedia|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 44
+ },
+ "wikipedia|bare|2": {
+  "writes": 0,
+  "intents": 1,
+  "disk_reads": 0,
+  "n_cmds": 46
+ },
+ "wikipedia|bare|3": {
+  "writes": 0,
+  "intents": 1,
+  "disk_reads": 0,
+  "n_cmds": 42
+ },
+ "unitto|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 24
+ },
+ "unitto|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 38
+ },
+ "unitto|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 42
+ },
+ "unitto|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "unitto|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 19
+ },
+ "unitto|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 37
+ },
+ "seal|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 51
+ },
+ "seal|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 55
+ },
+ "seal|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 53
+ },
+ "seal|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 48
+ },
+ "seal|bare|2": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 48
+ },
+ "seal|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 41
+ },
+ "read_you|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 82
+ },
+ "read_you|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 57
+ },
+ "read_you|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 53
+ },
+ "read_you|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 44
+ },
+ "read_you|bare|2": {
+  "writes": 7,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 41
+ },
+ "read_you|bare|3": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 48
+ },
+ "feeder|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 41
+ },
+ "feeder|hybrid|2": {
+  "writes": 2,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 36
+ },
+ "feeder|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 49
+ },
+ "feeder|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 25
+ },
+ "feeder|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 22
+ },
+ "feeder|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 33
+ },
+ "jerboa|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 28
+ },
+ "jerboa|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 29
+ },
+ "jerboa|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 28
+ },
+ "jerboa|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "jerboa|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "jerboa|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 25
+ },
+ "joplin|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 53
+ },
+ "joplin|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 42
+ },
+ "joplin|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 50
+ },
+ "joplin|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 40
+ },
+ "joplin|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 22
+ },
+ "joplin|bare|3": {
+  "writes": 3,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 42
+ },
+ "lesspass|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 21
+ },
+ "lesspass|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 21
+ },
+ "lesspass|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 25
+ },
+ "lesspass|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 20
+ },
+ "lesspass|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 23
+ },
+ "lesspass|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 16
+ },
+ "notesnook|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 51
+ },
+ "notesnook|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 41
+ },
+ "notesnook|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 50
+ },
+ "notesnook|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 47
+ },
+ "notesnook|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 46
+ },
+ "notesnook|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 45
+ },
+ "antennapod|hybrid|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 53
+ },
+ "antennapod|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 50
+ },
+ "antennapod|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 36
+ },
+ "antennapod|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "antennapod|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 21
+ },
+ "antennapod|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 19
+ },
+ "aegis|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 52
+ },
+ "aegis|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 53
+ },
+ "aegis|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 18,
+  "n_cmds": 68
+ },
+ "aegis|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "aegis|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 45
+ },
+ "aegis|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 25
+ },
+ "material_files|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 4,
+  "n_cmds": 53
+ },
+ "material_files|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 50
+ },
+ "material_files|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 52
+ },
+ "material_files|bare|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 44
+ },
+ "material_files|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "material_files|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 44
+ },
+ "tasks_org|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 54
+ },
+ "tasks_org|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 54
+ },
+ "tasks_org|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 49
+ },
+ "tasks_org|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 35
+ },
+ "tasks_org|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 50
+ },
+ "tasks_org|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 48
+ },
+ "breezy_weather|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 52
+ },
+ "breezy_weather|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 38
+ },
+ "breezy_weather|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 31
+ },
+ "breezy_weather|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "breezy_weather|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 36
+ },
+ "breezy_weather|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_cmds": 23
+ },
+ "blacksquircle|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 46
+ },
+ "blacksquircle|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_cmds": 48
+ },
+ "blacksquircle|hybrid|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 6,
+  "n_cmds": 42
+ },
+ "blacksquircle|bare|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 45
+ },
+ "blacksquircle|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_cmds": 40
+ },
+ "blacksquircle|bare|3": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_cmds": 44
+ }
+}

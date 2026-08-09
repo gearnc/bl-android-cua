@@ -1,0 +1,170 @@
+# Environment blueprint used by every eval child session: Android SDK, an "eval" AVD at
+# 720x1280 @320dpi, the suite APKs, and ~/start-emulator.sh. Paste into the org-level
+# blueprint (Settings > Environment) before running the matrix; see evals/README.md.
+
+initialize: |
+  set -e
+  # ---- Android SDK (cmdline-tools, platform-tools, emulator, API 34 x86_64 image) ----
+  export ANDROID_HOME="$HOME/android-sdk"
+  export ANDROID_SDK_ROOT="$ANDROID_HOME"
+  export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+  if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+    mkdir -p "$ANDROID_HOME/cmdline-tools"
+    curl -sSL -o /tmp/cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+    unzip -q /tmp/cmdtools.zip -d "$ANDROID_HOME/cmdline-tools"
+    mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+  fi
+  yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses > /dev/null 2>&1 || true
+  yes | sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "emulator" "platforms;android-34" \
+    "system-images;android-34;google_apis;x86_64" > /dev/null
+
+  # KVM access for the emulator (group membership persists in the snapshot filesystem).
+  sudo gpasswd -a "$USER" kvm || true
+
+  echo "ANDROID_HOME=$HOME/android-sdk" >> $ENVRC
+  echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $ENVRC
+  echo "PATH=$HOME/android-sdk/platform-tools:$HOME/android-sdk/emulator:$HOME/android-sdk/cmdline-tools/latest/bin:$PATH" >> $ENVRC
+
+  # ---- AVD (720x1280 @320dpi: the default 1080x2400 renders unreadably small on the desktop) ----
+  echo no | avdmanager create avd -n eval -k "system-images;android-34;google_apis;x86_64" -d pixel_6 --force
+  CFG="$HOME/.android/avd/eval.avd/config.ini"
+  # avdmanager writes "hw.lcd.width=1080" (no spaces); the emulator rewrites it spaced on first
+  # boot. Match both, then assert, so a silent no-match can never ship a 1080x2400 snapshot again.
+  sed -i -E 's/^hw\.lcd\.density *=.*/hw.lcd.density = 320/; s/^hw\.lcd\.height *=.*/hw.lcd.height = 1280/; s/^hw\.lcd\.width *=.*/hw.lcd.width = 720/' "$CFG"
+  grep -E '^hw\.lcd\.(width|height|density)' "$CFG"
+  grep -qE '^hw\.lcd\.width *= *720$' "$CFG" || { echo "FATAL: AVD resolution patch did not apply"; exit 1; }
+
+  # xdotool/wmctrl are used by start-emulator.sh to enlarge the emulator window.
+  command -v xdotool >/dev/null || sudo apt-get install -y -qq xdotool wmctrl || true
+
+  # ---- APKs (F-Droid latest suggested builds) ----
+  mkdir -p "$HOME/apks"
+  for p in net.gsantner.markor com.amaze.filemanager org.fossify.notes org.fossify.gallery \
+           org.fossify.contacts org.fossify.calendar org.fossify.filemanager com.ichi2.anki \
+           org.wikipedia me.ash.reader com.nononsenseapps.feeder com.junkfood.seal com.jerboa \
+           com.sadellie.unitto net.cozic.joplin com.lesspass.android com.streetwriters.notesnook \
+           com.fsck.k9 org.tasks de.danoeh.antennapod com.beemdevelopment.aegis org.videolan.vlc \
+           com.artifex.mupdf.viewer.app com.blacksquircle.ui org.akanework.gramophone \
+           org.breezyweather com.zionhuang.music com.dessalines.thumbkey com.looker.droidify \
+           org.schabi.newpipe me.zhanghai.android.files com.zulipmobile org.moire.opensudoku \
+           com.github.libretube com.machiav3lli.fdroid; do
+    vc=$(curl -sS "https://f-droid.org/api/v1/packages/$p" \
+         | python3 -c "import sys,json;print(json.load(sys.stdin).get('suggestedVersionCode',''))" 2>/dev/null) || continue
+    [ -n "$vc" ] || { echo "no F-Droid build for $p"; continue; }
+    f="$HOME/apks/${p}_${vc}.apk"
+    [ -s "$f" ] || curl -fsSL -o "$f" "https://f-droid.org/repo/${p}_${vc}.apk" || { rm -f "$f"; echo "download failed: $p"; }
+  done
+
+  # ---- Emulator launcher (used by every session; also self-heals missing apps) ----
+  cat > "$HOME/start-emulator.sh" <<'SCRIPT'
+  #!/usr/bin/env bash
+  # Boot the pre-provisioned "eval" AVD (apps already installed) and wait until it is ready.
+  # Usage: start-emulator.sh [--headless]
+  set -u
+  export ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
+  export ANDROID_SDK_ROOT="$ANDROID_HOME"
+  export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+
+  WINDOW_ARGS=""
+  [ "${1:-}" = "--headless" ] && WINDOW_ARGS="-no-window"
+
+  if adb devices | grep -q "emulator-5554[[:space:]]*device"; then
+    echo "emulator already running"
+  else
+    pkill -f "qemu-system-x86_64.*eval" 2>/dev/null
+    sleep 2
+    DISPLAY="${DISPLAY:-:0}" setsid sg kvm -c \
+      "emulator -avd eval -no-audio -no-boot-anim -gpu swiftshader_indirect $WINDOW_ARGS" \
+      > "$HOME/emulator.log" 2>&1 < /dev/null &
+  fi
+
+  adb wait-for-device
+  until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 3; done
+  adb shell input keyevent 82 >/dev/null 2>&1   # dismiss keyguard
+  adb shell wm dismiss-keyguard >/dev/null 2>&1
+
+  # The AVD is meant to be 720x1280 @320dpi. Enforce it at runtime too: at the pixel_6 default of
+  # 1080x2400 the emulator window downscales to an illegible strip in a 1024x768 screenshot.
+  adb shell wm size reset >/dev/null 2>&1
+  adb shell wm density reset >/dev/null 2>&1
+  physical=$(adb shell wm size 2>/dev/null | sed -n 's/^Physical size: *//p' | tr -d '\r')
+  if [ "$physical" != "720x1280" ]; then
+    echo "WARNING: AVD is ${physical:-unknown}; overriding the display to 720x1280 @320dpi"
+    adb shell wm size 720x1280 >/dev/null 2>&1
+    adb shell wm density 320 >/dev/null 2>&1
+  fi
+
+  # Fallback: install any bundled APK missing from the AVD image.
+  installed=$(adb shell pm list packages | sed 's/package://' | tr -d '\r')
+  for f in "$HOME"/apks/*.apk; do
+    [ -e "$f" ] || break
+    pkg="$(basename "$f" .apk)"; pkg="${pkg%_*}"
+    grep -qx "$pkg" <<<"$installed" || adb install -r -g "$f" >/dev/null 2>&1
+  done
+
+  # Deterministic device state: no animations (a common source of mid-transition misreads for
+  # both screenshot- and accessibility-based navigation) and never sleep during a long run.
+  for s in window_animation_scale transition_animation_scale animator_duration_scale; do
+    adb shell settings put global "$s" 0 >/dev/null 2>&1
+  done
+  adb shell settings put system screen_off_timeout 2147483647 >/dev/null 2>&1
+  adb shell svc power stayon true >/dev/null 2>&1
+
+  # Pre-grant all-files access to the file-oriented apps. Without it their first run dies on a
+  # "Storage permission required" dialog that can only be cleared deep in system Settings --- an
+  # ACU sink unrelated to app navigation.
+  for p in net.gsantner.markor com.amaze.filemanager me.zhanghai.android.files \
+           org.fossify.filemanager com.blacksquircle.ui; do
+    adb shell pm list packages | grep -q "package:$p$" &&
+      adb shell appops set --uid "$p" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1
+  done
+
+  # Make the emulator window big and legible on the desktop, and close the
+  # "nested virtualization" advisory that the emulator opens on top of it.
+  if [ "$WINDOW_ARGS" != "-no-window" ] && command -v xdotool >/dev/null; then
+    export DISPLAY="${DISPLAY:-:0}"
+    for _ in $(seq 20); do
+      W=$(xdotool search --name "Android Emulator - eval" 2>/dev/null | head -1)
+      [ -n "$W" ] && break
+      sleep 2
+    done
+    if [ -n "${W:-}" ]; then
+      wmctrl -c "Emulator Running in Nested Virtualization" 2>/dev/null
+      xdotool windowactivate "$W" 2>/dev/null
+      for _ in $(seq 7); do xdotool key --window "$W" ctrl+Up; sleep 0.6; done
+      xdotool windowmove "$W" 0 0
+      echo "emulator window: $(xdotool getwindowgeometry "$W" | tr '\n' ' ')"
+    fi
+  fi
+
+  echo "emulator ready: Android $(adb shell getprop ro.build.version.release | tr -d '\r'), $(adb shell wm size | tr -d '\r')"
+  adb shell pm list packages -3 | sed 's/package://' | sort
+  SCRIPT
+  chmod +x "$HOME/start-emulator.sh"
+
+  # ---- Pre-install every APK into the AVD so sessions boot with the apps present ----
+  sg kvm -c "emulator -avd eval -no-audio -no-boot-anim -gpu swiftshader_indirect -no-window -no-snapshot" \
+    > "$HOME/emulator-build.log" 2>&1 &
+  adb wait-for-device
+  timeout 600 bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = "1" ]; do sleep 3; done' || true
+  if [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+    for f in "$HOME"/apks/*.apk; do adb install -r -g "$f" > /dev/null 2>&1 || echo "install failed: $f"; done
+    adb shell pm list packages -3 | wc -l
+    adb emu kill || true
+    sleep 10
+  else
+    echo "emulator did not boot during build; sessions will install APKs on first start-emulator.sh run"
+  fi
+knowledge:
+  - name: android emulator
+    contents: |
+      ~/start-emulator.sh          # boots the pre-provisioned "eval" AVD (Android 14, 720x1280) on DISPLAY :0 and enlarges its window
+      ~/start-emulator.sh --headless
+      adb devices                  # emulator-5554 once ready; apps are already installed
+  - name: preinstalled android apps
+    contents: |
+      APKs live in ~/apks and are preinstalled in the AVD. Views: markor, amaze, fossify.*,
+      antennapod, aegis, vlc, mupdf, material files, opensudoku, newpipe. Compose: seal, read you
+      (me.ash.reader), feeder, jerboa, unitto, squircle, breezyweather, innertune (com.zionhuang.music),
+      gramophone, thumbkey, droid-ify, neo store, libretube, k-9, tasks.org, wikipedia, ankidroid.
+      React Native: joplin (net.cozic.joplin), lesspass, notesnook.
