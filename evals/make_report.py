@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from paths import BYPASS  # noqa: E402
-from report import load, table  # noqa: E402
+from report import cell, load  # noqa: E402
 from suites import APPS  # noqa: E402
 
 rows = load()
@@ -30,20 +30,59 @@ apps = sorted({r["app"] for r in rows})
 reps = max(r["rep"] for r in rows)
 
 
+LABEL = {"acu": "ACU", "perception_tokens": "perception tokens",
+         "screenshots": "screenshots", "n_done": "tasks done (of ~30)"}
+
+
+def num(x, scale):
+    """One decimal for small-valued fields (ACU, task counts), where units hide the difference.
+
+    Chosen per table from the field's largest value, so a column is formatted consistently.
+    """
+    return f"{x:,.1f}" if scale < 100 else f"{x:,.0f}"
+
+
 def dist(field):
     out = []
     for name, arm in (("hybrid", H), ("bare", B)):
         xs = sorted(r[field] for r in arm)
         sd = s.stdev(xs) if len(xs) > 1 else 0.0
-        out.append(f"| {field} | {name} | {s.mean(xs):,.0f} | {s.median(xs):,.0f} | "
-                   f"{sd / s.mean(xs) if s.mean(xs) else 0:.2f} | "
-                   f"{xs[int(.9 * (len(xs) - 1))]:,.0f} | {max(xs):,.0f} |")
+        sc = max(r[field] for r in rows)
+        out.append(f"| {LABEL.get(field, field)} | {name} | {num(s.mean(xs), sc)} | "
+                   f"{num(s.median(xs), sc)} | {sd / s.mean(xs) if s.mean(xs) else 0:.2f} | "
+                   f"{num(xs[int(.9 * (len(xs) - 1))], sc)} | {num(max(xs), sc)} |")
     return "\n".join(out)
 
 
 def ratio(field):
     hm, bm = s.mean([r[field] for r in H]), s.mean([r[field] for r in B])
     return hm / bm if bm else 0.0
+
+
+def table(rows, group, field, title):
+    """Markdown version of report.py's stdout table — same numbers, rendered for a reader."""
+    out = ["", f"{title}", "",
+           f"| {group} | hybrid mean | cv | bare mean | cv | hybrid/bare |",
+           "|---|---:|---:|---:|---:|---:|"]
+    groups = sorted({r[group] for r in rows}) + [None]   # None = the ALL row
+    sc = max(r[field] for r in rows if r.get(field) is not None)
+    for g in groups:
+        sel = [r for r in rows if g is None or r[group] == g]
+        h = [r for r in sel if r["arm"] == "hybrid"]
+        b = [r for r in sel if r["arm"] == "bare"]
+        if not h or not b:
+            continue
+        hm, hcv, _ = cell(h, field)
+        bm, bcv, _ = cell(b, field)
+        out.append(f"| {g or '**all**'} | {num(hm, sc)} | {hcv:.2f} | {num(bm, sc)} | {bcv:.2f} | "
+                   f"{hm / bm if bm else 0:.2f}x |")
+    return "\n".join(out)
+
+
+TREE_MAX = 5    # screenshots: at or below this the run was reading trees, not pixels
+CUA_MIN = 20    # at or above this it really was doing visual CUA
+n_tree = sum(1 for r in B if r["screenshots"] <= TREE_MAX)
+n_cua = sum(1 for r in B if r["screenshots"] >= CUA_MIN)
 
 
 def worst(arm, field):
@@ -62,12 +101,15 @@ bare sessions were forbidden from reading or invoking the skill.
 
 ## What the bare arm actually does
 
-**It is not screenshot-driven CUA.** Denied the skill, agents reinvent it: a typical bare session
-writes a `uiautomator dump` wrapper (`ui.sh`, `t.sh`, `ui.py`) in its first minute and greps it.
-Median bare run in this dataset: {s.median([r['screenshots'] for r in B]):.0f} screenshots across
-~30 tasks. So this measures **the skill vs. agent-improvised tree tooling**, not the skill vs.
-looking at the screen. Check this every time before quoting the numbers — if bare screenshots per
-run climb into the dozens, the arm has become something else and the comparison changes meaning.
+**Mostly it is not screenshot-driven CUA.** Denied the skill, agents reinvent it: a typical bare
+session writes a `uiautomator dump` wrapper (`ui.sh`, `t.sh`, `ui.py`) in its first minute and
+greps it. Counting a run as *improvised tree tooling* at <= {TREE_MAX} screenshots and as *visual
+CUA* at >= {CUA_MIN}: {n_tree}/{len(B)} bare runs improvised tree tooling,
+{n_cua}/{len(B)} did visual CUA, {len(B) - n_tree - n_cua} sat in between. Median bare run:
+{s.median([r['screenshots'] for r in B]):.0f} screenshots across ~30 tasks. So this mostly
+measures **the skill vs. agent-improvised tree tooling**, not the skill vs. looking at the
+screen — and the bare arm's tail is dominated by the runs that fell back to pixels. Re-check
+this split every run before quoting the numbers; it decides which experiment you ran.
 
 The opposite failure — completing tasks by writing device state instead of driving the UI
 (`adb shell mkdir` for "create a folder") — is counted too: runs touching device state directly,

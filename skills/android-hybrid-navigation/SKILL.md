@@ -43,6 +43,13 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    checked/selected state, `<C>`lickable/`<S>`crollable/`<E>`dit flags, and center coords.
    When you already know what you're after, use `hd see --find <regex>` instead — it prints
    only matching nodes (a few lines instead of the whole tree) with tappable indexes.
+   **Printing a whole screen you did not need is the most expensive habit available to you.**
+   For a single lookup `hd see --find PAT` is the cheapest thing there is. When you have several
+   things to check on one screen, split capture from retrieval: `hd see -q` caches the full tree
+   and prints one line, then each `hd find PAT` greps that cache with no new dump. Either way you
+   pay for the matches, not the screen — 77% less printed output than reading the tree, measured
+   over 4 apps in `evals/test_capture_retrieval.py`. If `hd find` reports NO MATCH, re-observe
+   with `hd see` rather than guessing again.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
    `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
    **Per-item actions (rename/delete/copy/move on a list item, file, feed, note): long-press
@@ -50,19 +57,17 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    long-press. Do not hunt for an edit button or overflow menu until a long-press has failed.
    After long-press, `hd see` — look for a selection toolbar (often icon-only; the three-dot
    "More options" node reveals labeled Rename/Copy entries).
-3. Re-observe when the screen may have changed shape — but NOT reflexively, and rarely with a
-   bare `hd see`. Pick the cheapest observation that answers your actual question:
-   - **You know what you're checking** → `hd see --find PAT`.
-   - **You stayed on the same screen** (toggled a switch, typed, checked a box, opened an
-     inline menu) → `hd see --diff`: it prints only the nodes that appeared or disappeared
-     since your last `see`, with current indexes, so `hd tap` works straight off it. Measured
-     over 24 post-action observations across 8 apps this cut the observation by 69% on average,
-     96–97% when a tap only changed a toolbar or a row's state. When the screen turns over
-     entirely, `--diff` sees that the delta is bigger than the tree and prints the tree
-     instead, so it is never a trap.
-   - **A screen you have never seen** → plain `hd see`.
-   `--diff` compares against your last `see` of the same kind (compact vs `--full` vs
-   `--find`); against any other it just prints the tree.
+3. Re-observe when the screen may have changed shape — but NOT reflexively. Pick the cheapest
+   observation that answers your actual question:
+   - **You know what you're checking** → `hd see --find PAT`, or `hd see -q` once and then a
+     `hd find PAT` per thing you want to confirm.
+   - **Otherwise just run `hd see`.** A re-`see` of a screen you already observed prints only
+     the nodes that appeared or disappeared since your last `see` of the same kind, with
+     current indexes, so `hd tap` works straight off it. Measured over 24 post-action
+     observations across 8 apps this cuts the observation by 69% on average, 96–97% when a tap
+     only changed a toolbar or a row's state. When the screen turns over entirely, or the last
+     `see` is more than 120s old, you get the whole tree — so it is never a trap and there is
+     no flag to remember. `hd see --no-diff` forces the whole tree.
    See "Earned shortcuts" below for when to skip the re-observation altogether.
 
 ## Earned shortcuts: don't pay for certainty you already have
@@ -92,14 +97,13 @@ per profile — this is the core of the skill:
 profile=views    hd see --find <target>     grep-grade cost; trees are labeled, so a
                  (default primitive)        pattern almost always hits. Fall back to
                                             plain `hd see` only when exploring a new screen.
-profile=compose  hd see on arrival, then    unlabeled clickable Views are only findable via
-                 hd see --diff              their near:"label" hints, which plain grep-style
-                 (default primitives)       thinking would miss — so the rendered tree is the
-                                            primitive the FIRST time you meet a screen. But
-                                            re-reading that whole tree after every tap is the
-                                            most expensive habit in this profile; once you
-                                            have read the screen, --diff (or --find over a
-                                            hint you already saw) answers "did it take?".
+profile=compose  hd see (arrival prints     unlabeled clickable Views are only findable via
+                 the tree, re-see prints    their near:"label" hints, which plain grep-style
+                 the delta)                 thinking would miss — so the rendered tree is the
+                                            primitive the FIRST time you meet a screen, and a
+                                            re-`see` costs only the delta. Re-reading a whole
+                                            tree after every tap is the most expensive habit
+                                            in this profile; --no-diff is rarely what you want.
 profile=rn       hd see --find <target>     labels usually hit; --find also matches state
                  then `hd see` on miss      (e.g. --find 'checked=false' lists unchecked
                                             boxes). Re-tap by coords if a tap no-ops.
@@ -112,14 +116,16 @@ canvas/WebView pixels, or when `uiautomator dump` keeps failing on animated scre
 
 ## Framework-specific traps
 - **Views**: richest trees; permission dialogs and menus all greppable. Cheapest case.
-- **Compose** (profile=compose): toggle state usually appears as text ("On"/"Use device
-  theme") rather than a checked attribute; re-`see` after toggling and read the text. Some
+- **Compose** (profile=compose): switches are bare `View`s, but they carry state and the tree
+  shows it as `checked=true/false` on the row — read that, never a screenshot. Some settings
+  also state themselves as text ("On"/"Use device theme"); re-`see` after toggling. Some
   Compose checkboxes ignore `input tap` — if state didn't change after 2 attempts, verify
   another way instead of looping. Back button may CANCEL an edit screen instead of saving —
   look for an explicit OK/Save node.
 - **RN** (profile=rn): tap by index/coords only (tree-issued a11y clicks can silently no-op
   — re-`see` to confirm the tap took effect). Checkable nodes always show `checked=true/false`
-  — trust it over a screenshot. Note editors are often WebViews: their EditTexts usually still
+  — trust it over a screenshot, and `--find 'checked=false'` lists the unchecked ones. Note
+  editors are often WebViews: their EditTexts usually still
   accept `hd type` after a tap; verify by re-`see` before reaching for a screenshot.
 
 ## Typing

@@ -22,10 +22,18 @@ Verbs:
   hd see [--full] [--find PAT]   observe screen; --find prints ONLY nodes matching regex PAT
                                   (case-insensitive, over label/id/class) plus their index —
                                   the cheapest observation when you know what you're looking for
-  hd see --diff                   observe, but print only what CHANGED since the last `see`.
-                                  The observe-act-observe loop re-reads a tree that is mostly
-                                  identical; this pays for the delta instead. Falls back to the
-                                  whole tree when the screen turns over.
+  hd see                          re-observing a screen you have already seen prints only what
+                                  CHANGED since your last `see` of the same kind, with current
+                                  indexes, so `hd tap` works straight off it. The whole tree is
+                                  printed whenever it is cheaper than the delta, when the last
+                                  `see` is stale, or on request with --no-diff.
+  hd see --no-diff                force the whole tree even if a recent `see` exists.
+                                  (`--diff` is still accepted and now means the default.)
+  hd see -q                       observe WITHOUT printing the tree: one header line, the tree
+                                  cached on disk. Pair with `hd find`.
+  hd find PAT                     grep the cached tree — no adb round-trip, only the matching
+                                  lines enter the context. Re-observes if the cache is stale.
+                                  `hd see -q; hd find Save` is the cheapest observe-and-locate.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -46,6 +54,7 @@ ADB = os.environ.get("HD_ADB", "adb")
 STATE = "/tmp/hd_last_tree.json"
 FW_CACHE = "/tmp/hd_fw_cache.json"
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
+DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
 def foreground_pkg():
     out = sh("shell", "dumpsys", "window")
@@ -177,6 +186,9 @@ def adopt_labels(nodes):
                 n["hint"] = (best["text"] or best["desc"])[:40]
     return nodes
 
+TOGGLE_CLASSES = ("Switch", "CheckBox", "RadioButton", "ToggleButton")
+
+
 def render(nodes, full, profile="views"):
     if profile == "compose":
         nodes = adopt_labels(nodes)
@@ -192,11 +204,14 @@ def render(nodes, full, profile="views"):
             parts.append(json.dumps(label if len(label) <= 80 else label[:77] + "..."))
         if n["id"]:
             parts.append(f"#{n['id']}")
-        for attr in ("checked", "selected"):
-            if n[attr] in ("true", "false") and n["class"] in ("Switch", "CheckBox", "RadioButton", "ToggleButton"):
-                parts.append(f"{attr}={n[attr]}")  # F2
-        if profile == "rn" and n.get("checkable") and "checked=" not in " ".join(parts):
+        # F2. Toggle state comes from the node's own attributes, not its class: Compose renders
+        # every switch as a bare `View` with checkable="true", so keying off Switch/CheckBox
+        # made toggle state invisible in exactly the profile that has no labels to read it from.
+        if n["checked"] in ("true", "false") and (
+                n["checkable"] or n["class"] in TOGGLE_CLASSES):
             parts.append(f"checked={n['checked']}")
+        if n["selected"] in ("true", "false") and n["class"] in TOGGLE_CLASSES:
+            parts.append(f"selected={n['selected']}")
         if n.get("hint"):
             parts.append(f"near:{json.dumps(n['hint'])}")
         if n["enabled"] == "false":
@@ -232,22 +247,33 @@ def diff_lines(old, new):
     return added, removed
 
 
-def see(full=False, find=None, diff=False):
+def see(full=False, find=None, diff=True, quiet=False):
     nodes, size = parse(dump_xml())
     profile, src = detect_profile(nodes)
-    if find:
-        full = True  # match against everything; indexes must stay valid for `hd tap`
+    if find or quiet:
+        # Match against everything; indexes must stay valid for `hd tap`. Quiet capture prints
+        # nothing, so caching the full tree costs no context and gives `hd find` the better recall.
+        full = True
     shown, lines = render(nodes, full, profile)
     if not full and len(shown) < COMPACT_MIN_NODES:  # F7
         shown, lines = render(nodes, True, profile)
         print(f"# compact view had <{COMPACT_MIN_NODES} nodes; auto-escalated to --full")
     mode = "find" if find else "full" if full else "compact"
-    prev = json.load(open(STATE)) if diff and os.path.exists(STATE) else None
-    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode},
-              open(STATE, "w"))
+    prev = json.load(open(STATE)) if diff and not quiet and os.path.exists(STATE) else None
+    if prev and time.time() - prev.get("ts", 0) > DIFF_MAX_AGE:
+        prev = None  # too old to be the screen you think it is
+    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode,
+               "size": list(size), "profile": profile}, open(STATE, "w"))
+    if quiet:
+        # Capture without printing: the tree is on disk, and `hd find PAT` reads it from there.
+        # Costs one line of context instead of the whole screen, for the common case where you
+        # know what you are looking for.
+        print(f"# screen {size[0]}x{size[1]}, {len(shown)} nodes cached (profile={profile}) "
+              f"— `hd find PAT` to read it, `hd see` to print it")
+        return
     # Only diff against a tree rendered the same way. A compact tree against a --full one
     # reports every layout container as removed, which is noise, not a change.
-    if diff and prev and prev.get("lines") and prev.get("mode") == mode:
+    if diff and not find and prev and prev.get("lines") and prev.get("mode") == mode:
         added, removed = diff_lines(prev["lines"], lines)
         out = [f"+ {l}" for l in added] + [f"- {l}" for l in removed]
         # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
@@ -255,7 +281,8 @@ def see(full=False, find=None, diff=False):
         if len("\n".join(out)) < len("\n".join(lines)):
             # Indexes below are the CURRENT ones, so `hd tap` works straight off a diff.
             print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)} "
-                  f"of {len(shown)} nodes (diff, profile={profile})")
+                  f"of {len(shown)} nodes (diff vs last see, profile={profile}; "
+                  f"`hd see --no-diff` for the whole tree)")
             print("\n".join(out) if out else "# no change since the last see")
             return
         print("# screen changed too much to diff — showing the whole tree")
@@ -274,6 +301,25 @@ def load_state():
     if not os.path.exists(STATE):
         sys.exit("no previous `hd see` — observe first")
     return json.load(open(STATE))
+
+
+def find_cached(pat):
+    """Grep the cached tree. Re-dumps only if the cache is too old to trust (DIFF_MAX_AGE).
+
+    This is the retrieval half of `hd see -q`: capture puts the screen on disk for free, and
+    only the matching lines are ever printed into the context.
+    """
+    st = json.load(open(STATE)) if os.path.exists(STATE) else None
+    if not st or time.time() - st.get("ts", 0) > DIFF_MAX_AGE:
+        return see(find=pat)
+    rx = re.compile(pat, re.I)
+    hits = [ln for ln in st["lines"] if rx.search(ln)]
+    w, h = st.get("size", (0, 0))
+    age = int(time.time() - st["ts"])
+    print(f"# screen {w}x{h}, {len(hits)}/{len(st['lines'])} nodes match {pat!r} "
+          f"(cached {age}s ago, profile={st.get('profile')})")
+    print("\n".join(hits) if hits else
+          "# NO MATCH in the cached tree — `hd see` to re-observe before concluding it's absent")
 
 def tap(index, long=False):
     st = load_state()
@@ -314,7 +360,10 @@ def main():
     cmd = a[0]
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
-        see(full="--full" in a, find=find, diff="--diff" in a)
+        see(full="--full" in a, find=find, diff="--no-diff" not in a,
+            quiet="-q" in a or "--quiet" in a)
+    elif cmd == "find":
+        find_cached(a[1])
     elif cmd == "tap":
         tap(int(a[1]))
     elif cmd == "longpress":

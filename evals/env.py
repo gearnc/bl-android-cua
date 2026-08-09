@@ -10,7 +10,12 @@ ENV = {**os.environ, "PATH": PATH}
 
 
 def find_hd():
-    """The skill's CLI: the copy in this repo if present, else wherever the plugin cache put it."""
+    """The skill's CLI: $HD_PY, else the copy in this repo, else wherever the plugin cache put it.
+
+    $HD_PY lets a bench run against another revision of hd.py to show a fix actually changed it.
+    """
+    if os.environ.get("HD_PY"):
+        return os.environ["HD_PY"]
     local = Path(__file__).resolve().parent.parent / "skills/android-hybrid-navigation/hd.py"
     if local.exists():
         return str(local)

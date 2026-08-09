@@ -1,0 +1,146 @@
+{
+ "markor|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 2,
+  "n_exec": 42
+ },
+ "markor|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_exec": 42
+ },
+ "markor|bare|1": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 9,
+  "n_exec": 44
+ },
+ "markor|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 3,
+  "n_exec": 45
+ },
+ "amaze|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 9,
+  "n_exec": 61
+ },
+ "amaze|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 9,
+  "n_exec": 75
+ },
+ "amaze|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 5,
+  "n_exec": 42
+ },
+ "amaze|bare|2": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_exec": 44
+ },
+ "seal|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 42
+ },
+ "seal|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 57
+ },
+ "seal|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 48
+ },
+ "seal|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 46
+ },
+ "unitto|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 4,
+  "n_exec": 44
+ },
+ "unitto|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 25
+ },
+ "unitto|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 31
+ },
+ "unitto|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 6,
+  "n_exec": 35
+ },
+ "joplin|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 44
+ },
+ "joplin|hybrid|2": {
+  "writes": 1,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 51
+ },
+ "joplin|bare|2": {
+  "writes": 2,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_exec": 39
+ },
+ "joplin|bare|1": {
+  "writes": 2,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 30
+ },
+ "lesspass|hybrid|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 17
+ },
+ "lesspass|hybrid|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 23
+ },
+ "lesspass|bare|1": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 0,
+  "n_exec": 23
+ },
+ "lesspass|bare|2": {
+  "writes": 0,
+  "intents": 0,
+  "disk_reads": 1,
+  "n_exec": 19
+ }
+}
