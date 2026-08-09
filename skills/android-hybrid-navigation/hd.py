@@ -181,6 +181,9 @@ def adopt_labels(nodes):
                 n["hint"] = (best["text"] or best["desc"])[:40]
     return nodes
 
+TOGGLE_CLASSES = ("Switch", "CheckBox", "RadioButton", "ToggleButton")
+
+
 def render(nodes, full, profile="views"):
     if profile == "compose":
         nodes = adopt_labels(nodes)
@@ -196,11 +199,14 @@ def render(nodes, full, profile="views"):
             parts.append(json.dumps(label if len(label) <= 80 else label[:77] + "..."))
         if n["id"]:
             parts.append(f"#{n['id']}")
-        for attr in ("checked", "selected"):
-            if n[attr] in ("true", "false") and n["class"] in ("Switch", "CheckBox", "RadioButton", "ToggleButton"):
-                parts.append(f"{attr}={n[attr]}")  # F2
-        if profile == "rn" and n.get("checkable") and "checked=" not in " ".join(parts):
+        # F2. Toggle state comes from the node's own attributes, not its class: Compose renders
+        # every switch as a bare `View` with checkable="true", so keying off Switch/CheckBox
+        # made toggle state invisible in exactly the profile that has no labels to read it from.
+        if n["checked"] in ("true", "false") and (
+                n["checkable"] or n["class"] in TOGGLE_CLASSES):
             parts.append(f"checked={n['checked']}")
+        if n["selected"] in ("true", "false") and n["class"] in TOGGLE_CLASSES:
+            parts.append(f"selected={n['selected']}")
         if n.get("hint"):
             parts.append(f"near:{json.dumps(n['hint'])}")
         if n["enabled"] == "false":

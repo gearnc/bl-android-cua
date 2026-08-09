@@ -97,4 +97,5 @@ Two checks that decide whether the numbers mean what they appear to:
 | `test_detect.py` | framework-detection regression across all 21 apps |
 | `test_diff.py` | bench: whole tree vs delta cost after real actions |
 | `test_autodiff.py` | bench: what the DEFAULT `hd see` costs in the observe->act->observe loop, plus the turn-over and stale-baseline fallbacks |
+| `test_toggle_state.py` | regression: a checkable node must render its `checked=` state (set `HD_PY=` to run it against another revision) |
 | `test_dumps.py` | checks every suite's verification dump runs clean |

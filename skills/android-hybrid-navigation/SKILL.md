@@ -108,14 +108,16 @@ canvas/WebView pixels, or when `uiautomator dump` keeps failing on animated scre
 
 ## Framework-specific traps
 - **Views**: richest trees; permission dialogs and menus all greppable. Cheapest case.
-- **Compose** (profile=compose): toggle state usually appears as text ("On"/"Use device
-  theme") rather than a checked attribute; re-`see` after toggling and read the text. Some
+- **Compose** (profile=compose): switches are bare `View`s, but they carry state and the tree
+  shows it as `checked=true/false` on the row — read that, never a screenshot. Some settings
+  also state themselves as text ("On"/"Use device theme"); re-`see` after toggling. Some
   Compose checkboxes ignore `input tap` — if state didn't change after 2 attempts, verify
   another way instead of looping. Back button may CANCEL an edit screen instead of saving —
   look for an explicit OK/Save node.
 - **RN** (profile=rn): tap by index/coords only (tree-issued a11y clicks can silently no-op
   — re-`see` to confirm the tap took effect). Checkable nodes always show `checked=true/false`
-  — trust it over a screenshot. Note editors are often WebViews: their EditTexts usually still
+  — trust it over a screenshot, and `--find 'checked=false'` lists the unchecked ones. Note
+  editors are often WebViews: their EditTexts usually still
   accept `hd type` after a tap; verify by re-`see` before reaching for a screenshot.
 
 ## Typing
