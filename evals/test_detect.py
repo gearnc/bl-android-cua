@@ -3,7 +3,10 @@
 Compares detected profile against the expected label in suites.APPS (which was set from the
 runtime tree observed by hand, not from APK contents). Clears the per-package cache first.
 """
-import json, os, subprocess, sys, time
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -28,7 +31,7 @@ def main():
         out = subprocess.run([sys.executable, HD, "see"], capture_output=True, text=True,
                              env=env).stdout
         # `see` may print an auto-escalation notice before the header carrying profile=.
-        header = next((l for l in out.splitlines() if "profile=" in l),
+        header = next((ln for ln in out.splitlines() if "profile=" in ln),
                       out.splitlines()[0] if out else "(no output)")
         got = "?"
         for p in ("compose", "rn", "views"):

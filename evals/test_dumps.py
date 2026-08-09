@@ -15,5 +15,5 @@ BAD = ("not found", "syntax error", "Permission denied")
 for k, a in APPS.items():
     r = subprocess.run([ADB, "shell", a["dump"]], capture_output=True, timeout=180)
     out = r.stdout.decode(errors="replace") + r.stderr.decode(errors="replace")
-    bad = [l for l in out.splitlines() if any(b in l for b in BAD)]
+    bad = [ln for ln in out.splitlines() if any(b in ln for b in BAD)]
     print(f"{k:17s} rc={r.returncode} bytes={len(out):6d} problems={bad[:2]}")
