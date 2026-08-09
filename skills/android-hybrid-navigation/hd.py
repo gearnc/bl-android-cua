@@ -25,10 +25,8 @@ Verbs:
   hd see                          re-observing a screen you have already seen prints only what
                                   CHANGED since your last `see` of the same kind, with current
                                   indexes, so `hd tap` works straight off it. The whole tree is
-                                  printed whenever it is cheaper than the delta, when the last
-                                  `see` is stale, or on request with --no-diff.
-  hd see --no-diff                force the whole tree even if a recent `see` exists.
-                                  (`--diff` is still accepted and now means the default.)
+                                  printed automatically whenever it is cheaper than the delta or
+                                  the last `see` is too old to trust — you never have to ask.
   hd see -q                       observe WITHOUT printing the tree: one header line, the tree
                                   cached on disk. Pair with `hd find`.
   hd find PAT                     grep the cached tree — no adb round-trip, only the matching
@@ -280,9 +278,12 @@ def see(full=False, find=None, diff=True, quiet=False):
         # old tree plus the new one, so a diff would be the more expensive way to say it.
         if len("\n".join(out)) < len("\n".join(lines)):
             # Indexes below are the CURRENT ones, so `hd tap` works straight off a diff.
+            # Deliberately does NOT name the escape hatch. In the 2026-08-10 run agents typed
+            # `hd see --no-diff` 717 times against 15 deltas actually printed — an opt-out
+            # advertised on every delta and in the verb list is an opt-out that gets typed.
             print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)} "
                   f"of {len(shown)} nodes (diff vs last see, profile={profile}; "
-                  f"`hd see --no-diff` for the whole tree)")
+                  f"unlisted nodes are unchanged and keep their indexes)")
             print("\n".join(out) if out else "# no change since the last see")
             return
         print("# screen changed too much to diff — showing the whole tree")

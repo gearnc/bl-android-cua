@@ -79,14 +79,22 @@ Two checks that decide whether the numbers mean what they appear to:
    `uiautomator dump` wrapper and grep it, typically within the first minute. When that happens
    the comparison is *skill vs. agent-improvised tree tooling*, not *skill vs. screenshots*.
    `screenshots` per bare run tells you which world you are in: ~2 means improvised tree tooling,
-   dozens means real visual CUA. Expect a mix — in the 2026-08-09 run 5/12 bare runs were tree
-   tooling and 2/12 were genuine visual CUA, and those two set the arm's tail.
+   dozens means real visual CUA. Expect a mix, and expect it to move between runs of the same
+   matrix: 5/12 tree tooling vs 2/12 visual CUA in the 2026-08-09 run, then 2/12 vs 6/12 in the
+   2026-08-09-autodiff re-run hours later. `make_report.py` derives the sentence from the
+   screenshot distribution rather than asserting it; don't quote a perception ratio across two
+   runs whose bare arms did different things.
 2. **Is a perception ratio being read as a cost ratio?** It is not one. Billed input is the
    resident context integrated over turns (`billed.py`), so cheap looks that persist can cost
    more than expensive looks that don't: in the 2026-08-09 run hybrid spent 0.50x the perception
    tokens and billed the same (median 3.23 vs 3.18 Mtok). Quote perception ratios as perception,
-   and compute billed tokens before claiming a cost win.
-3. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
+   and compute billed tokens before claiming a cost win. A whole run's perception spend is a
+   fraction of a percent of what it bills.
+3. **Did the arm use the cheap verb at all?** A saving nobody types is worth nothing, and this
+   has now cost two runs in a row: `--diff` went untyped, then `--no-diff` opted out of the
+   default 717 times against 15 deltas actually printed. `make_report.py` prints the hybrid
+   arm's observation-verb mix; read it before crediting or blaming a mechanism.
+4. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
    deep-link intents. A lopsided count means one arm did less work, and the ACU comparison is void.
 
 ## Files
@@ -103,6 +111,7 @@ Two checks that decide whether the numbers mean what they appear to:
 | `test_detect.py` | framework-detection regression across all 21 apps |
 | `test_diff.py` | bench: whole tree vs delta cost after real actions |
 | `test_autodiff.py` | bench: what the DEFAULT `hd see` costs in the observe->act->observe loop, plus the turn-over and stale-baseline fallbacks |
+| `test_no_diff_affordance.py` | bench + regression: `--no-diff` still works but is advertised nowhere, and what one `--no-diff` re-read costs against the default delta |
 | `test_toggle_state.py` | regression: a checkable node must render its `checked=` state (set `HD_PY=` to run it against another revision) |
 | `test_capture_retrieval.py` | bench: `hd see -q` + `hd find` (capture once, print only matches) vs printing the tree — cost *and* recall, since cheaper retrieval that misses nodes is not cheaper |
 | `test_dumps.py` | checks every suite's verification dump runs clean |
