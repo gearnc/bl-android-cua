@@ -43,6 +43,13 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    checked/selected state, `<C>`lickable/`<S>`crollable/`<E>`dit flags, and center coords.
    When you already know what you're after, use `hd see --find <regex>` instead — it prints
    only matching nodes (a few lines instead of the whole tree) with tappable indexes.
+   **Printing a whole screen you did not need is the most expensive habit available to you.**
+   For a single lookup `hd see --find PAT` is the cheapest thing there is. When you have several
+   things to check on one screen, split capture from retrieval: `hd see -q` caches the full tree
+   and prints one line, then each `hd find PAT` greps that cache with no new dump. Either way you
+   pay for the matches, not the screen — 77% less printed output than reading the tree, measured
+   over 4 apps in `evals/test_capture_retrieval.py`. If `hd find` reports NO MATCH, re-observe
+   with `hd see` rather than guessing again.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
    `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
    **Per-item actions (rename/delete/copy/move on a list item, file, feed, note): long-press
@@ -52,7 +59,8 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    "More options" node reveals labeled Rename/Copy entries).
 3. Re-observe when the screen may have changed shape — but NOT reflexively. Pick the cheapest
    observation that answers your actual question:
-   - **You know what you're checking** → `hd see --find PAT`.
+   - **You know what you're checking** → `hd see --find PAT`, or `hd see -q` once and then a
+     `hd find PAT` per thing you want to confirm.
    - **Otherwise just run `hd see`.** A re-`see` of a screen you already observed prints only
      the nodes that appeared or disappeared since your last `see` of the same kind, with
      current indexes, so `hd tap` works straight off it. Measured over 24 post-action

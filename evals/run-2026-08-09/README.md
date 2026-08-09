@@ -101,11 +101,17 @@ tree into the transcript. Per run, hybrid issues 14.0 `--find`, 10.9 whole-tree 
 `--full` and 0.7 `--diff` — i.e. ~27 observations against bare's ~17, and 12.4 of them print
 everything on the screen when the agent wanted one node.
 
-That, not residency, is the mechanism behind hybrid's extra ~1.9k text tokens per run, and it is
-also why the skill can lose: its cheapest verb is a whole tree, while the improvised tool's
-cheapest verb is a grep. Defaulting a re-`see` to the delta (this PR) closes most of it — a
-re-observation of a screen already seen adds ~100 tokens instead of 400-2,000, 59-66% less on the
-bench — and it targets exactly the `amaze|hybrid|1` failure mode.
+That, not residency, is the mechanism behind hybrid's extra ~1.9k text tokens per run. Note what
+it is *not*: `hd see --find` already costs the same as a dump-and-grep (measured in
+`evals/test_capture_retrieval.py` — 1,819 bytes vs 2,773 for a cache-and-grep, the difference
+being a second header line). The tool was never the problem. The behaviour was: hybrid printed a
+whole screen 12.4 times per run because its default verb prints one, while an agent that has to
+type `uiautomator dump` itself has already decided what it is grepping for. Two changes in this
+PR attack that — a re-`see` now prints the delta (59-66% less per re-observation), and
+`hd see -q` + `hd find` make "observe without reading the screen" a verb the skill can prescribe
+(77% less than reading the tree, 88% over an observe-locate loop) — but the honest expectation is
+recovering the 3% median gap, not a step change. Residency is what makes even that worth doing:
+~1.9k tokens added mid-run is ~60k billed after being re-read for the remaining ~30 turns.
 
 Turn count is the other half of billing, and there the arms are identical (93.3 vs 93.0 overall,
 64 vs 62 excluding blowups, at the same batching density of 1.50 vs 1.48 UI actions per exec that

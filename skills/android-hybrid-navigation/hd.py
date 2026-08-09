@@ -29,6 +29,11 @@ Verbs:
                                   `see` is stale, or on request with --no-diff.
   hd see --no-diff                force the whole tree even if a recent `see` exists.
                                   (`--diff` is still accepted and now means the default.)
+  hd see -q                       observe WITHOUT printing the tree: one header line, the tree
+                                  cached on disk. Pair with `hd find`.
+  hd find PAT                     grep the cached tree — no adb round-trip, only the matching
+                                  lines enter the context. Re-observes if the cache is stale.
+                                  `hd see -q; hd find Save` is the cheapest observe-and-locate.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -242,21 +247,30 @@ def diff_lines(old, new):
     return added, removed
 
 
-def see(full=False, find=None, diff=True):
+def see(full=False, find=None, diff=True, quiet=False):
     nodes, size = parse(dump_xml())
     profile, src = detect_profile(nodes)
-    if find:
-        full = True  # match against everything; indexes must stay valid for `hd tap`
+    if find or quiet:
+        # Match against everything; indexes must stay valid for `hd tap`. Quiet capture prints
+        # nothing, so caching the full tree costs no context and gives `hd find` the better recall.
+        full = True
     shown, lines = render(nodes, full, profile)
     if not full and len(shown) < COMPACT_MIN_NODES:  # F7
         shown, lines = render(nodes, True, profile)
         print(f"# compact view had <{COMPACT_MIN_NODES} nodes; auto-escalated to --full")
     mode = "find" if find else "full" if full else "compact"
-    prev = json.load(open(STATE)) if diff and os.path.exists(STATE) else None
+    prev = json.load(open(STATE)) if diff and not quiet and os.path.exists(STATE) else None
     if prev and time.time() - prev.get("ts", 0) > DIFF_MAX_AGE:
         prev = None  # too old to be the screen you think it is
-    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode},
-              open(STATE, "w"))
+    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode,
+               "size": list(size), "profile": profile}, open(STATE, "w"))
+    if quiet:
+        # Capture without printing: the tree is on disk, and `hd find PAT` reads it from there.
+        # Costs one line of context instead of the whole screen, for the common case where you
+        # know what you are looking for.
+        print(f"# screen {size[0]}x{size[1]}, {len(shown)} nodes cached (profile={profile}) "
+              f"— `hd find PAT` to read it, `hd see` to print it")
+        return
     # Only diff against a tree rendered the same way. A compact tree against a --full one
     # reports every layout container as removed, which is noise, not a change.
     if diff and not find and prev and prev.get("lines") and prev.get("mode") == mode:
@@ -287,6 +301,25 @@ def load_state():
     if not os.path.exists(STATE):
         sys.exit("no previous `hd see` — observe first")
     return json.load(open(STATE))
+
+
+def find_cached(pat):
+    """Grep the cached tree. Re-dumps only if the cache is too old to trust (DIFF_MAX_AGE).
+
+    This is the retrieval half of `hd see -q`: capture puts the screen on disk for free, and
+    only the matching lines are ever printed into the context.
+    """
+    st = json.load(open(STATE)) if os.path.exists(STATE) else None
+    if not st or time.time() - st.get("ts", 0) > DIFF_MAX_AGE:
+        return see(find=pat)
+    rx = re.compile(pat, re.I)
+    hits = [ln for ln in st["lines"] if rx.search(ln)]
+    w, h = st.get("size", (0, 0))
+    age = int(time.time() - st["ts"])
+    print(f"# screen {w}x{h}, {len(hits)}/{len(st['lines'])} nodes match {pat!r} "
+          f"(cached {age}s ago, profile={st.get('profile')})")
+    print("\n".join(hits) if hits else
+          "# NO MATCH in the cached tree — `hd see` to re-observe before concluding it's absent")
 
 def tap(index, long=False):
     st = load_state()
@@ -327,7 +360,10 @@ def main():
     cmd = a[0]
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
-        see(full="--full" in a, find=find, diff="--no-diff" not in a)
+        see(full="--full" in a, find=find, diff="--no-diff" not in a,
+            quiet="-q" in a or "--quiet" in a)
+    elif cmd == "find":
+        find_cached(a[1])
     elif cmd == "tap":
         tap(int(a[1]))
     elif cmd == "longpress":
