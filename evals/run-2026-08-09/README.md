@@ -28,6 +28,7 @@ default for a re-`see`.
 - `metrics.json` — ACU, perception tokens, screenshots, iterations, exec calls per cell
 - `tasks.json` — n_done / n_partial / n_failed per cell
 - `bypass.json` — UI-bypassing shortcut commands per cell
+- `billed.json` — turns, peak context and billed input tokens per cell (see below)
 - `report.md` — the full writeup
 
 ## What bounds ACU — why 0.50x perception is 1.02x ACU
