@@ -22,6 +22,10 @@ Verbs:
   hd see [--full] [--find PAT]   observe screen; --find prints ONLY nodes matching regex PAT
                                   (case-insensitive, over label/id/class) plus their index —
                                   the cheapest observation when you know what you're looking for
+  hd see --diff                   observe, but print only what CHANGED since the last `see`.
+                                  The observe-act-observe loop re-reads a tree that is mostly
+                                  identical; this pays for the delta instead. Falls back to the
+                                  whole tree when the screen turns over.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -35,7 +39,7 @@ Verbs:
   hd wait-idle [--timeout S]
 State file: /tmp/hd_last_tree.json (indexes are only valid against the last `see`).
 """
-import json, os, re, shlex, subprocess, sys, time
+import collections, json, os, re, shlex, subprocess, sys, time
 import xml.etree.ElementTree as ET
 
 ADB = os.environ.get("HD_ADB", "adb")
@@ -204,7 +208,31 @@ def render(nodes, full, profile="views"):
         lines.append("  " * min(n["depth"], 6) + " ".join(parts))
     return shown, lines
 
-def see(full=False, find=None):
+def identity(line):
+    """A node line without its index, so an inserted row does not mark everything below it new."""
+    return re.sub(r"^(\s*)\[\d+\]\s", r"\1", line)
+
+
+def diff_lines(old, new):
+    """(added lines with their current indexes, removed lines).
+
+    Deliberately set-based rather than a sequence diff: what an agent needs after a tap is
+    "what is on screen now that was not before", and a scrolled list would otherwise report
+    every row as moved.
+    """
+    old_ids = collections.Counter(identity(l) for l in old)
+    added = []
+    for l in new:
+        key = identity(l)
+        if old_ids[key] > 0:
+            old_ids[key] -= 1
+        else:
+            added.append(l)
+    removed = [l.strip() for l, n in old_ids.items() if n > 0]
+    return added, removed
+
+
+def see(full=False, find=None, diff=False):
     nodes, size = parse(dump_xml())
     profile, src = detect_profile(nodes)
     if find:
@@ -213,7 +241,24 @@ def see(full=False, find=None):
     if not full and len(shown) < COMPACT_MIN_NODES:  # F7
         shown, lines = render(nodes, True, profile)
         print(f"# compact view had <{COMPACT_MIN_NODES} nodes; auto-escalated to --full")
-    json.dump({"nodes": shown, "ts": time.time()}, open(STATE, "w"))
+    mode = "find" if find else "full" if full else "compact"
+    prev = json.load(open(STATE)) if diff and os.path.exists(STATE) else None
+    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode},
+              open(STATE, "w"))
+    # Only diff against a tree rendered the same way. A compact tree against a --full one
+    # reports every layout container as removed, which is noise, not a change.
+    if diff and prev and prev.get("lines") and prev.get("mode") == mode:
+        added, removed = diff_lines(prev["lines"], lines)
+        out = [f"+ {l}" for l in added] + [f"- {l}" for l in removed]
+        # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
+        # old tree plus the new one, so a diff would be the more expensive way to say it.
+        if len("\n".join(out)) < len("\n".join(lines)):
+            # Indexes below are the CURRENT ones, so `hd tap` works straight off a diff.
+            print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)} "
+                  f"of {len(shown)} nodes (diff, profile={profile})")
+            print("\n".join(out) if out else "# no change since the last see")
+            return
+        print("# screen changed too much to diff — showing the whole tree")
     if find:
         pat = re.compile(find, re.I)
         hits = [ln for ln in lines if pat.search(ln)]  # matches labels/ids/class/near-hints/checked= state
@@ -269,7 +314,7 @@ def main():
     cmd = a[0]
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
-        see(full="--full" in a, find=find)
+        see(full="--full" in a, find=find, diff="--diff" in a)
     elif cmd == "tap":
         tap(int(a[1]))
     elif cmd == "longpress":

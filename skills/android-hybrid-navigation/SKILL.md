@@ -50,8 +50,20 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    long-press. Do not hunt for an edit button or overflow menu until a long-press has failed.
    After long-press, `hd see` — look for a selection toolbar (often icon-only; the three-dot
    "More options" node reveals labeled Rename/Copy entries).
-3. Re-observe (`hd see` / `see --find`) when the screen may have changed shape — but NOT
-   reflexively. See "Earned shortcuts" below.
+3. Re-observe when the screen may have changed shape — but NOT reflexively, and rarely with a
+   bare `hd see`. Pick the cheapest observation that answers your actual question:
+   - **You know what you're checking** → `hd see --find PAT`.
+   - **You stayed on the same screen** (toggled a switch, typed, checked a box, opened an
+     inline menu) → `hd see --diff`: it prints only the nodes that appeared or disappeared
+     since your last `see`, with current indexes, so `hd tap` works straight off it. Measured
+     over 24 post-action observations across 8 apps this cut the observation by 69% on average,
+     96–97% when a tap only changed a toolbar or a row's state. When the screen turns over
+     entirely, `--diff` sees that the delta is bigger than the tree and prints the tree
+     instead, so it is never a trap.
+   - **A screen you have never seen** → plain `hd see`.
+   `--diff` compares against your last `see` of the same kind (compact vs `--full` vs
+   `--find`); against any other it just prints the tree.
+   See "Earned shortcuts" below for when to skip the re-observation altogether.
 
 ## Earned shortcuts: don't pay for certainty you already have
 The observe→act→observe loop is the safe default, but on screens you have ALREADY observed
@@ -80,11 +92,14 @@ per profile — this is the core of the skill:
 profile=views    hd see --find <target>     grep-grade cost; trees are labeled, so a
                  (default primitive)        pattern almost always hits. Fall back to
                                             plain `hd see` only when exploring a new screen.
-profile=compose  hd see                     the rendered compact tree IS the primitive:
-                 (default primitive)        unlabeled clickable Views are only findable via
-                                            their near:"label" hints, which plain grep-style
-                                            thinking would miss. --find still works and
-                                            matches near: hints too.
+profile=compose  hd see on arrival, then    unlabeled clickable Views are only findable via
+                 hd see --diff              their near:"label" hints, which plain grep-style
+                 (default primitives)       thinking would miss — so the rendered tree is the
+                                            primitive the FIRST time you meet a screen. But
+                                            re-reading that whole tree after every tap is the
+                                            most expensive habit in this profile; once you
+                                            have read the screen, --diff (or --find over a
+                                            hint you already saw) answers "did it take?".
 profile=rn       hd see --find <target>     labels usually hit; --find also matches state
                  then `hd see` on miss      (e.g. --find 'checked=false' lists unchecked
                                             boxes). Re-tap by coords if a tap no-ops.
