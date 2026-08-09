@@ -22,10 +22,13 @@ Verbs:
   hd see [--full] [--find PAT]   observe screen; --find prints ONLY nodes matching regex PAT
                                   (case-insensitive, over label/id/class) plus their index —
                                   the cheapest observation when you know what you're looking for
-  hd see --diff                   observe, but print only what CHANGED since the last `see`.
-                                  The observe-act-observe loop re-reads a tree that is mostly
-                                  identical; this pays for the delta instead. Falls back to the
-                                  whole tree when the screen turns over.
+  hd see                          re-observing a screen you have already seen prints only what
+                                  CHANGED since your last `see` of the same kind, with current
+                                  indexes, so `hd tap` works straight off it. The whole tree is
+                                  printed whenever it is cheaper than the delta, when the last
+                                  `see` is stale, or on request with --no-diff.
+  hd see --no-diff                force the whole tree even if a recent `see` exists.
+                                  (`--diff` is still accepted and now means the default.)
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -46,6 +49,7 @@ ADB = os.environ.get("HD_ADB", "adb")
 STATE = "/tmp/hd_last_tree.json"
 FW_CACHE = "/tmp/hd_fw_cache.json"
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
+DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
 def foreground_pkg():
     out = sh("shell", "dumpsys", "window")
@@ -232,7 +236,7 @@ def diff_lines(old, new):
     return added, removed
 
 
-def see(full=False, find=None, diff=False):
+def see(full=False, find=None, diff=True):
     nodes, size = parse(dump_xml())
     profile, src = detect_profile(nodes)
     if find:
@@ -243,11 +247,13 @@ def see(full=False, find=None, diff=False):
         print(f"# compact view had <{COMPACT_MIN_NODES} nodes; auto-escalated to --full")
     mode = "find" if find else "full" if full else "compact"
     prev = json.load(open(STATE)) if diff and os.path.exists(STATE) else None
+    if prev and time.time() - prev.get("ts", 0) > DIFF_MAX_AGE:
+        prev = None  # too old to be the screen you think it is
     json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode},
               open(STATE, "w"))
     # Only diff against a tree rendered the same way. A compact tree against a --full one
     # reports every layout container as removed, which is noise, not a change.
-    if diff and prev and prev.get("lines") and prev.get("mode") == mode:
+    if diff and not find and prev and prev.get("lines") and prev.get("mode") == mode:
         added, removed = diff_lines(prev["lines"], lines)
         out = [f"+ {l}" for l in added] + [f"- {l}" for l in removed]
         # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
@@ -255,7 +261,8 @@ def see(full=False, find=None, diff=False):
         if len("\n".join(out)) < len("\n".join(lines)):
             # Indexes below are the CURRENT ones, so `hd tap` works straight off a diff.
             print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)} "
-                  f"of {len(shown)} nodes (diff, profile={profile})")
+                  f"of {len(shown)} nodes (diff vs last see, profile={profile}; "
+                  f"`hd see --no-diff` for the whole tree)")
             print("\n".join(out) if out else "# no change since the last see")
             return
         print("# screen changed too much to diff — showing the whole tree")
@@ -314,7 +321,7 @@ def main():
     cmd = a[0]
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
-        see(full="--full" in a, find=find, diff="--diff" in a)
+        see(full="--full" in a, find=find, diff="--no-diff" not in a)
     elif cmd == "tap":
         tap(int(a[1]))
     elif cmd == "longpress":

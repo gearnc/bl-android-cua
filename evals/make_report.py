@@ -46,6 +46,12 @@ def ratio(field):
     return hm / bm if bm else 0.0
 
 
+TREE_MAX = 5    # screenshots: at or below this the run was reading trees, not pixels
+CUA_MIN = 20    # at or above this it really was doing visual CUA
+n_tree = sum(1 for r in B if r["screenshots"] <= TREE_MAX)
+n_cua = sum(1 for r in B if r["screenshots"] >= CUA_MIN)
+
+
 def worst(arm, field):
     r = max(arm, key=lambda r: r[field])
     return f"{r[field]:,.0f} ({r['app']}|{r['arm']}|{r['rep']})"
@@ -62,12 +68,15 @@ bare sessions were forbidden from reading or invoking the skill.
 
 ## What the bare arm actually does
 
-**It is not screenshot-driven CUA.** Denied the skill, agents reinvent it: a typical bare session
-writes a `uiautomator dump` wrapper (`ui.sh`, `t.sh`, `ui.py`) in its first minute and greps it.
-Median bare run in this dataset: {s.median([r['screenshots'] for r in B]):.0f} screenshots across
-~30 tasks. So this measures **the skill vs. agent-improvised tree tooling**, not the skill vs.
-looking at the screen. Check this every time before quoting the numbers — if bare screenshots per
-run climb into the dozens, the arm has become something else and the comparison changes meaning.
+**Mostly it is not screenshot-driven CUA.** Denied the skill, agents reinvent it: a typical bare
+session writes a `uiautomator dump` wrapper (`ui.sh`, `t.sh`, `ui.py`) in its first minute and
+greps it. Counting a run as *improvised tree tooling* at <= {TREE_MAX} screenshots and as *visual
+CUA* at >= {CUA_MIN}: {n_tree}/{len(B)} bare runs improvised tree tooling,
+{n_cua}/{len(B)} did visual CUA, {len(B) - n_tree - n_cua} sat in between. Median bare run:
+{s.median([r['screenshots'] for r in B]):.0f} screenshots across ~30 tasks. So this mostly
+measures **the skill vs. agent-improvised tree tooling**, not the skill vs. looking at the
+screen — and the bare arm's tail is dominated by the runs that fell back to pixels. Re-check
+this split every run before quoting the numbers; it decides which experiment you ran.
 
 The opposite failure — completing tasks by writing device state instead of driving the UI
 (`adb shell mkdir` for "create a folder") — is counted too: runs touching device state directly,

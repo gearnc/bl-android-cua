@@ -45,11 +45,11 @@ def measure(pkg, n_actions=4):
     for i, idx in enumerate(clickables(tree)[2:2 + n_actions]):
         subprocess.run(HD + ["tap", str(idx)], capture_output=True, text=True, env=ENV)
         time.sleep(2)
-        # Order matters: --diff has to run against the PRE-action tree, so it must come first.
-        # Taking the full tree first refreshes the state file and makes every diff read "no
-        # change", which is a measurement of nothing.
-        d = hd("see", "--diff")
-        full = hd("see")
+        # Order matters: the diff has to run against the PRE-action tree, so it must come
+        # first. Taking the full tree first refreshes the state file and makes every diff read
+        # "no change", which is a measurement of nothing.
+        d = hd("see")                    # the default is now the diff
+        full = hd("see", "--no-diff")
         changed = "too much to diff" in d
         rows.append((f"tap {idx}", len(full), len(d), changed))
         subprocess.run(HD + ["key", "back"], capture_output=True, env=ENV)

@@ -79,7 +79,8 @@ Two checks that decide whether the numbers mean what they appear to:
    `uiautomator dump` wrapper and grep it, typically within the first minute. When that happens
    the comparison is *skill vs. agent-improvised tree tooling*, not *skill vs. screenshots*.
    `screenshots` per bare run tells you which world you are in: ~2 means improvised tree tooling,
-   dozens means real visual CUA.
+   dozens means real visual CUA. Expect a mix — in the 2026-08-09 run 5/12 bare runs were tree
+   tooling and 2/12 were genuine visual CUA, and those two set the arm's tail.
 2. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
    deep-link intents. A lopsided count means one arm did less work, and the ACU comparison is void.
 
@@ -94,5 +95,6 @@ Two checks that decide whether the numbers mean what they appear to:
 | `bypass.py` | detects UI-bypassing shortcut commands |
 | `report.py`, `make_report.py` | comparison tables and the markdown writeup |
 | `test_detect.py` | framework-detection regression across all 21 apps |
-| `test_diff.py` | bench: `hd see` vs `hd see --diff` cost after real actions |
+| `test_diff.py` | bench: whole tree vs delta cost after real actions |
+| `test_autodiff.py` | bench: what the DEFAULT `hd see` costs in the observe->act->observe loop, plus the turn-over and stale-baseline fallbacks |
 | `test_dumps.py` | checks every suite's verification dump runs clean |
