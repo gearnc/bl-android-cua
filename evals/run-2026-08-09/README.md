@@ -16,6 +16,10 @@ visual CUA (94 and 121 screenshots), 5 sat in between. The bare arm's perception
 dominated by those two runs, so the headline ratio is "skill vs. a mix of improvised tree
 tooling and pixels", not "skill vs. screenshots". `report.md` states this per run.
 
+**Read the ACU section before quoting the perception ratio.** 0.50x perception is not 0.50x cost:
+billed tokens are at parity (median 3.17 vs 3.08 Mtok excluding four tail runs), and the skill's
+measured value in this run is reliability parity at cost parity, not a cost win.
+
 **Mechanism found.** `hd see --diff` was effectively unadopted: 8 invocations across all 12
 hybrid runs, zero in 8 of them, against 217 plain/`--full` re-reads. The two most expensive
 hybrid runs are both re-read loops — `amaze|hybrid|1` paged the full tree with
@@ -48,29 +52,64 @@ against `iteration_count` gives billed input directly:
 
 Billed tokens are at parity at the median (the means are skewed by the four >190-iteration runs),
 which is exactly what ACU reports; `acu` correlates 0.72 with billed input and 0.77 with turn
-count. The 22k perception saving is ~1% of a 3.2M billed total — while hybrid *carries* ~11k more
-resident context across ~93 turns, which is ~1M billed tokens on its own. That is where the
-saving goes.
+count. The scale is the first thing to notice: a whole run's perception spend, 22k tokens, is
+~1% of a 3.2M billed total, because what dominates is re-reading the resident context ~93 times.
+Halving perception moves ~0.3% of the bill. Any claim that a perception change moves cost has to
+be argued in resident tokens per turn, and even there the effect is second-order next to turns.
 
-Hybrid's context is the larger one despite the cheaper perception because the two arms buy
-different kinds of token. Hybrid's spend is text that stays: 54.0k bytes/run of `exec` output
-(the trees) vs bare's 32.7k, re-billed on every later turn. Bare's spend is images: 24.2
-screenshots/run arriving through `read` (38.8k of its 47.5k tool tokens), against hybrid's 5.5.
-Bare generates *more* total content (269.9k bytes of main-chain growth vs 209.1k) and still ends
-with a smaller context, so a smaller share of what bare spends stays resident — consistent with
-images not persisting the way text does, though this run doesn't isolate eviction directly. A
-screenshot is expensive once; a tree is cheap and then charged forever.
+### The arm means are tails; the medians are the same run
 
-Worth noting bare's *text* perception is the cheaper of the two (8.1k exec tokens/run vs hybrid's
-13.5k): a grep over a dumped XML returns less than a rendered tree. Hybrid's perception advantage
-is entirely that it does not need the screenshots.
+Four runs exceed 150 turns and they set every mean in this dataset:
 
-So the lever on ACU is resident tokens per turn, not tokens per look. Defaulting a re-`see` to
-the delta (this PR) is exactly that lever — it adds ~100 tokens to the context instead of
-400-2,000, 59-66% less per re-observation on the bench. Turn count is the other half and the two
-arms are identical there (93.3 vs 93.0, and the same batching density: 1.50 vs 1.48 UI actions
-per exec that contains one), so a 30-task suite costs ~3 turns per task however you look at the
-screen.
+| run | turns | exec tokens | screenshots | billed | what happened |
+|---|---:|---:|---:|---:|---|
+| `amaze\|hybrid\|1` | 246 | 37,421 | 7 | 22.1 Mtok | paged the full tree with `--full \| head`/`sed` |
+| `seal\|hybrid\|1` | 248 | 28,621 | 33 | 20.7 Mtok | screenshotted Compose toggles (the `checked=` bug) |
+| `amaze\|bare\|2` | 268 | 4,118 | 121 | 12.9 Mtok | visual CUA |
+| `joplin\|bare\|1` | 217 | 5,961 | 94 | 12.2 Mtok | visual CUA |
+
+Both arms blew up 2/12 times, and **hybrid's blowups are the more expensive**: 22.1 and 20.7 Mtok
+against bare's 12.9 and 12.2, because a text loop inflates turns as well as tokens. The reported
+0.50x perception ratio is largely an artifact of which *kind* of token each arm's tail spends —
+bare's tails buy images (expensive per look), hybrid's buy trees (cheap per look, many more
+looks) — and it inverts once you bill by context.
+
+Drop those four and the two arms are the same run:
+
+| median, 10 runs/arm | hybrid | bare |
+|---|---:|---:|
+| billed input | 3.17 Mtok | 3.08 Mtok |
+| turns | 64 | 62 |
+| exec calls | 53 | 50 |
+| exec tokens | 9,714 | 7,840 |
+| peak context | 68,831 | 65,374 |
+| screenshots | 2 | 7 |
+| ACU | 12.5 | 11.4 |
+
+So the honest reading is not "the skill is cheaper" and not "residency eats the saving". It is
+that in the normal case the skill is a wash (+3% billed tokens, within noise), it buys that wash
+by trading 5 screenshots for ~1.9k more text tokens, and everything else in this dataset is tail
+behaviour.
+
+### Where the residual text gap comes from
+
+Bare, having to build its own tooling, consistently builds one thing the skill does not do:
+**it separates capture from retrieval**. It dumps the tree to a file (10.2 raw dumps per run,
+which cost nothing in context because nothing is printed) and then greps it (6.0 filtered reads),
+so only the matching lines are ever billed. `hd see` fuses the two: every observation renders a
+tree into the transcript. Per run, hybrid issues 14.0 `--find`, 10.9 whole-tree `see`, 1.5
+`--full` and 0.7 `--diff` — i.e. ~27 observations against bare's ~17, and 12.4 of them print
+everything on the screen when the agent wanted one node.
+
+That, not residency, is the mechanism behind hybrid's extra ~1.9k text tokens per run, and it is
+also why the skill can lose: its cheapest verb is a whole tree, while the improvised tool's
+cheapest verb is a grep. Defaulting a re-`see` to the delta (this PR) closes most of it — a
+re-observation of a screen already seen adds ~100 tokens instead of 400-2,000, 59-66% less on the
+bench — and it targets exactly the `amaze|hybrid|1` failure mode.
+
+Turn count is the other half of billing, and there the arms are identical (93.3 vs 93.0 overall,
+64 vs 62 excluding blowups, at the same batching density of 1.50 vs 1.48 UI actions per exec that
+contains one): a 30-task suite costs ~3 turns per task however you look at the screen.
 
 ## Compose
 
