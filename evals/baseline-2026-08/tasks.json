@@ -1,0 +1,844 @@
+{
+ "markor|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "markor|hybrid|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "markor|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Markor v2.16.1 (163) \u2014 net.gsantner.markor"
+ },
+ "markor|hybrid|3": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "markor|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "markor|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "amaze|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "v3.11.3"
+ },
+ "amaze|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "amaze|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "v3.11.3"
+ },
+ "amaze|bare|1": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "v3.11.3"
+ },
+ "amaze|bare|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "v3.11.3"
+ },
+ "amaze|bare|3": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "v3.11.3"
+ },
+ "fossify_notes|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_notes|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_notes|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_notes|bare|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_notes|bare|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_notes|bare|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_contacts|hybrid|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_contacts|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Version 1.6.0"
+ },
+ "fossify_contacts|hybrid|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_contacts|bare|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_contacts|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_contacts|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|hybrid|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|hybrid|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|hybrid|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "fossify_gallery|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "ankidroid|hybrid|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.24.0 (May 3, 2026) (anki 25.09.2 / 3890e12c) (FSRS 6)"
+ },
+ "ankidroid|hybrid|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.24.0 (May 3, 2026) (anki 25.09.2 / 3890e12c) (FSRS 6)"
+ },
+ "ankidroid|hybrid|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "ankidroid|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "ankidroid|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "ankidroid|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.24.0 (May 3, 2026), backend (anki 25.09.2 / 3890e12c), (FSRS 6)"
+ },
+ "wikipedia|hybrid|1": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 2,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "wikipedia|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "wikipedia|hybrid|3": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "wikipedia|bare|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "wikipedia|bare|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "r/50598-r-2026-07-13"
+ },
+ "wikipedia|bare|3": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "unitto|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "unitto|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "unitto|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "unitto|bare|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "unitto|bare|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "unitto|bare|3": {
+  "n_done": 28,
+  "n_partial": 0,
+  "n_failed": 2,
+  "n_reported": 30,
+  "app_version": "Titanium yellow (76)"
+ },
+ "seal|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "seal|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "seal|hybrid|3": {
+  "n_done": 25,
+  "n_partial": 4,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "seal|bare|1": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "seal|bare|2": {
+  "n_done": 26,
+  "n_partial": 4,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "seal|bare|3": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.13.1-(F-Droid)"
+ },
+ "read_you|hybrid|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "read_you|hybrid|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "read_you|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "read_you|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "read_you|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "read_you|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "0.16.2"
+ },
+ "feeder|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.22.0"
+ },
+ "feeder|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "2.22.0"
+ },
+ "feeder|hybrid|3": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.22.0"
+ },
+ "feeder|bare|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.22.0 (versionCode 4050)"
+ },
+ "feeder|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "2.22.0"
+ },
+ "feeder|bare|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "2.22.0"
+ },
+ "jerboa|hybrid|1": {
+  "n_done": 25,
+  "n_partial": 1,
+  "n_failed": 4,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "jerboa|hybrid|2": {
+  "n_done": 25,
+  "n_partial": 1,
+  "n_failed": 4,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "jerboa|hybrid|3": {
+  "n_done": 25,
+  "n_partial": 2,
+  "n_failed": 3,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "jerboa|bare|1": {
+  "n_done": 25,
+  "n_partial": 1,
+  "n_failed": 4,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "jerboa|bare|2": {
+  "n_done": 25,
+  "n_partial": 1,
+  "n_failed": 4,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "jerboa|bare|3": {
+  "n_done": 25,
+  "n_partial": 2,
+  "n_failed": 3,
+  "n_reported": 30,
+  "app_version": "0.0.88-fdroid"
+ },
+ "joplin|hybrid|1": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "joplin|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "joplin|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "joplin|bare|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "joplin|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "joplin|bare|3": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "Joplin Mobile 3.6.20 (prod, android)"
+ },
+ "lesspass|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "LessPass version: 9.8.7"
+ },
+ "lesspass|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 2,
+  "n_reported": 30,
+  "app_version": "LessPass version: 9.8.7"
+ },
+ "lesspass|hybrid|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "LessPass version: 9.8.7"
+ },
+ "lesspass|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "LessPass version: 9.8.7 (versionName=9.8.7, versionCode=900800704)"
+ },
+ "lesspass|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "LessPass version: 9.8.7"
+ },
+ "lesspass|bare|3": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "9.8.7"
+ },
+ "notesnook|hybrid|1": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "notesnook|hybrid|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "notesnook|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "notesnook|bare|1": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "notesnook|bare|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "notesnook|bare|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "3.4.8"
+ },
+ "antennapod|hybrid|1": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "antennapod|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "antennapod|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "antennapod|bare|1": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "antennapod|bare|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "antennapod|bare|3": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "aegis|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "aegis|hybrid|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "aegis|hybrid|3": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "aegis|bare|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "aegis|bare|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "aegis|bare|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": "3.4.2"
+ },
+ "material_files|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": "1.7.4 (39)"
+ },
+ "material_files|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "material_files|hybrid|3": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "material_files|bare|1": {
+  "n_done": 25,
+  "n_partial": 4,
+  "n_failed": 1,
+  "n_reported": 30,
+  "app_version": null
+ },
+ "material_files|bare|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "material_files|bare|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "tasks_org|hybrid|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "tasks_org|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "tasks_org|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "tasks_org|bare|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "tasks_org|bare|2": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "tasks_org|bare|3": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "breezy_weather|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "breezy_weather|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "breezy_weather|hybrid|3": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "breezy_weather|bare|1": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "breezy_weather|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "breezy_weather|bare|3": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "blacksquircle|hybrid|1": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 2
+ },
+ "blacksquircle|hybrid|2": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 2
+ },
+ "blacksquircle|hybrid|3": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 2
+ },
+ "blacksquircle|bare|1": {
+  "n_done": 27,
+  "n_partial": 0,
+  "n_failed": 3
+ },
+ "blacksquircle|bare|2": {
+  "n_done": 27,
+  "n_partial": 0,
+  "n_failed": 3
+ },
+ "blacksquircle|bare|3": {
+  "n_done": 27,
+  "n_partial": 0,
+  "n_failed": 3
+ }
+}
