@@ -1,8 +1,9 @@
-"""Turn metrics.json + tasks.json into the hybrid-vs-bare comparison tables.
+"""Turn metrics.json + tasks.json into the per-arm comparison tables.
 
-Reports mean and spread for ACU and perception tokens, per stack and overall. Spread is given
-as the coefficient of variation, because the arms differ in scale and an absolute SD would make
-the cheaper arm look artificially stable.
+Reports mean and spread for ACU and perception tokens, per stack and overall, for however many
+arms the data contains (hybrid / bare / acli). Spread is given as the coefficient of variation,
+because the arms differ in scale and an absolute SD would make the cheaper arm look artificially
+stable. Ratios are taken against `bare`, the arm handed no tool.
 """
 import json
 import sys
@@ -11,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from collect import mean_sd  # noqa: E402
 from paths import METRICS, TASKS  # noqa: E402
+from plan import ARMS, BASELINE  # noqa: E402
 
 
 def load():
@@ -30,6 +32,12 @@ def load():
     return rows
 
 
+def arms_in(rows):
+    """Arms actually present, in the canonical order, so a partial run still renders."""
+    seen = {r["arm"] for r in rows}
+    return [a for a in ARMS if a in seen] + sorted(seen - set(ARMS))
+
+
 def by(rows, *keys):
     out = {}
     for r in rows:
@@ -44,25 +52,28 @@ def cell(rows, field):
 
 
 def table(rows, group, field, title):
-    """One field, hybrid vs bare, grouped by `group` (a row key such as 'app' or 'stack')."""
-    lines = [f"\n{title}",
-             f"{group:<18} {'hybrid mean':>12} {'cv':>6} {'bare mean':>12} {'cv':>6} {'ratio':>7}"]
-    groups = sorted({r[group] for r in rows})
-    for g in groups:
-        h = [r for r in rows if r[group] == g and r["arm"] == "hybrid"]
-        b = [r for r in rows if r[group] == g and r["arm"] == "bare"]
-        if not h or not b:
-            continue
-        hm, hcv, hn = cell(h, field)
-        bm, bcv, bn = cell(b, field)
-        ratio = hm / bm if bm else 0
-        lines.append(f"{g:<18} {hm:>12.0f} {hcv:>6.2f} {bm:>12.0f} {bcv:>6.2f} {ratio:>7.2f}")
-    h = [r for r in rows if r["arm"] == "hybrid"]
-    b = [r for r in rows if r["arm"] == "bare"]
-    hm, hcv, _ = cell(h, field)
-    bm, bcv, _ = cell(b, field)
-    lines.append(f"{'ALL':<18} {hm:>12.0f} {hcv:>6.2f} {bm:>12.0f} {bcv:>6.2f} "
-                 f"{hm / bm if bm else 0:>7.2f}")
+    """One field per arm, grouped by `group` (a row key such as 'app' or 'stack')."""
+    arms = arms_in(rows)
+    others = [a for a in arms if a != BASELINE]
+    head = f"{group:<18}" + "".join(f"{a + ' mean':>13}{'cv':>6}" for a in arms) \
+        + "".join(f"{a + '/' + BASELINE:>13}" for a in others)
+    lines = [f"\n{title}", head]
+
+    def row(label, sel):
+        m = {a: cell([r for r in sel if r["arm"] == a], field) for a in arms}
+        if not all(m[a][2] for a in arms):
+            return None
+        base = m[BASELINE][0] if BASELINE in m else 0
+        return f"{label:<18}" + "".join(f"{m[a][0]:>13.0f}{m[a][1]:>6.2f}" for a in arms) \
+            + "".join(f"{(m[a][0] / base if base else 0):>13.2f}" for a in others)
+
+    for g in sorted({r[group] for r in rows}):
+        line = row(g, [r for r in rows if r[group] == g])
+        if line:
+            lines.append(line)
+    line = row("ALL", rows)
+    if line:
+        lines.append(line)
     return "\n".join(lines)
 
 
@@ -71,9 +82,8 @@ if __name__ == "__main__":
     rows = load()
     for r in rows:
         r["stack"] = APPS[r["app"]]["stack"]
-    print(f"{len(rows)} runs: "
-          f"{sum(1 for r in rows if r['arm'] == 'hybrid')} hybrid / "
-          f"{sum(1 for r in rows if r['arm'] == 'bare')} bare")
+    print(f"{len(rows)} runs: " + " / ".join(
+        f"{sum(1 for r in rows if r['arm'] == a)} {a}" for a in arms_in(rows)))
     for field, title in [("acu", "ACU"),
                          ("perception_tokens", "PERCEPTION TOKENS"),
                          ("screenshots", "SCREENSHOTS"),

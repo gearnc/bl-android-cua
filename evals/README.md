@@ -1,31 +1,39 @@
-# Eval harness: android-hybrid-navigation vs. an unguided agent
+# Eval harness: android-hybrid-navigation vs. an unguided agent vs. accessibility-cli
 
-A blinded A/B over long Android workflows. Each **cell** is one app × one arm × one replicate and
-runs as its own child session, so ACU and perception tokens are attributable per cell.
+A blinded A/B/C over long Android workflows. Each **cell** is one app × one arm × one replicate
+and runs as its own child session, so ACU and perception tokens are attributable per cell.
 
 - **hybrid** — child is told to use whatever tooling it has (the plugin is loaded).
-- **bare** — child is forbidden from reading or invoking the skill.
+- **bare** — child is forbidden from reading or invoking the skill. The baseline every ratio is
+  taken against, because it is the only arm handed nothing.
+- **acli** — skill forbidden, and the child is pointed at
+  [DioxusLabs/accessibility-cli](https://github.com/DioxusLabs/accessibility-cli), prebuilt into
+  the snapshot and on `PATH`.
 
-Both arms get the *same* ~30-task suite and end with the same fixed `adb` state dump, so grading
-does not depend on self-report.
+Every arm gets the *same* ~30-task suite and ends with the same fixed `adb` state dump, so grading
+does not depend on self-report, and the arms differ by exactly one paragraph (`ARM_*` in
+`suites.py`).
 
 ## Requirements
 
-An emulator snapshot with `~/start-emulator.sh`, Android 14 (API 34) at 720x1280 @320dpi, and the
-suite's APKs preinstalled. The parent session needs the plugin loaded only if you intend to
-re-measure `hd` itself with `test_detect.py` / `test_diff.py`.
+An emulator snapshot with `~/start-emulator.sh`, Android 14 (API 34) at 720x1280 @320dpi, the
+suite's APKs preinstalled, and `accessibility-cli` on `PATH` (the org blueprint clones
+`~/repos/accessibility-cli` and `cargo install`s it; it needs a Rust with edition 2024 support and
+`libdbus-1-dev libatspi2.0-dev libx11-xcb-dev`). The parent session needs the plugin loaded only
+if you intend to re-measure `hd` itself with `test_detect.py` / `test_diff.py` / `test_acli.py`.
 
 ## Running one
 
-Standard shape — 6 apps (2 per UI toolkit) × 2 arms × 2 reps = 24 sessions:
+Standard shape — 6 apps (2 per UI toolkit) × 3 arms × 2 reps = 36 sessions:
 
 ```bash
-python3 evals/plan.py                       # list the cells
-python3 evals/plan.py --prompt markor|bare|1  # inspect one child's exact prompt
+python3 evals/plan.py                          # list the cells
+python3 evals/plan.py --arms hybrid,bare       # drop the accessibility-cli arm
+python3 evals/plan.py --prompt markor|acli|1   # inspect one child's exact prompt
 ```
 
 Launch (a `scripted_tools` snippet — tool calls must be inline, an imported module cannot make
-them). 24 cells is under the org's 100-session cap, so this goes in one shot:
+them). 36 cells is under the org's 100-session cap, so this goes in one shot:
 
 ```python
 import json, sys
@@ -73,7 +81,7 @@ Raw data lands in `evals/data/` (gitignored); set `EVAL_DATA=/path` to keep runs
 
 ## Reading the result honestly
 
-Two checks that decide whether the numbers mean what they appear to:
+Checks that decide whether the numbers mean what they appear to:
 
 1. **What is the bare arm doing?** Denied the skill, agents reinvent it — they write a
    `uiautomator dump` wrapper and grep it, typically within the first minute. When that happens
@@ -94,7 +102,15 @@ Two checks that decide whether the numbers mean what they appear to:
    has now cost two runs in a row: `--diff` went untyped, then `--no-diff` opted out of the
    default 717 times against 15 deltas actually printed. `make_report.py` prints the hybrid
    arm's observation-verb mix; read it before crediting or blaming a mechanism.
-4. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
+4. **Did the acli arm type `accessibility-cli` at all?** Same question as (3), one arm over:
+   `make_report.py` prints the invocation mix and names any acli run that never invoked the
+   binary. Those cells measured the agent's own fallback and have to come out before quoting an
+   acli ratio. Run `python3 evals/test_acli.py` before the matrix — a binary that errors on this
+   snapshot guarantees the fallback. It also prices one observation each way; on the six default
+   apps `accessibility-cli --llm` printed 29-749 chars against `hd see`'s 154-2684, because it
+   emits only nodes it considers interactive, so a cheaper look here is not yet a cheaper run —
+   it may be one that has to look again.
+5. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
    deep-link intents. A lopsided count means one arm did less work, and the ACU comparison is void.
 
 ## Files
@@ -115,3 +131,4 @@ Two checks that decide whether the numbers mean what they appear to:
 | `test_toggle_state.py` | regression: a checkable node must render its `checked=` state (set `HD_PY=` to run it against another revision) |
 | `test_capture_retrieval.py` | bench: `hd see -q` + `hd find` (capture once, print only matches) vs printing the tree — cost *and* recall, since cheaper retrieval that misses nodes is not cheaper |
 | `test_dumps.py` | checks every suite's verification dump runs clean |
+| `test_acli.py` | smoke test + bench: `accessibility-cli` observation cost vs `hd see`, per app |

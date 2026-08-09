@@ -1,4 +1,4 @@
-"""Locating adb and hd.py on the eval box, without hard-coding one machine's layout."""
+"""Locating adb, hd.py and accessibility-cli on the eval box, without hard-coding a layout."""
 import os
 import shutil
 from pathlib import Path
@@ -23,3 +23,17 @@ def find_hd():
         for p in root.rglob("android-hybrid-navigation/hd.py"):
             return str(p)
     raise FileNotFoundError("hd.py not found — is the plugin installed?")
+
+
+def find_acli():
+    """DioxusLabs/accessibility-cli: $ACLI_BIN, else PATH, else a cargo/target build."""
+    if os.environ.get("ACLI_BIN"):
+        return os.environ["ACLI_BIN"]
+    found = shutil.which("accessibility-cli")
+    if found:
+        return found
+    for p in (Path.home() / ".cargo/bin/accessibility-cli",
+              Path.home() / "repos/accessibility-cli/target/release/accessibility-cli"):
+        if p.exists():
+            return str(p)
+    raise FileNotFoundError("accessibility-cli not found — is it built into the snapshot?")

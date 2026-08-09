@@ -12,7 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from suites import APPS, build_prompt  # noqa: E402
 
-ARMS = ("hybrid", "bare")
+# `bare` is the baseline every ratio is taken against: it is the only arm with no tool handed to
+# it. `acli` measures DioxusLabs/accessibility-cli, prebuilt into the snapshot.
+ARMS = ("hybrid", "bare", "acli")
+BASELINE = "bare"
 
 # The standard 6-app subset: two apps per UI toolkit, chosen because their suites are long,
 # fully offline and machine-verifiable, and because they sit at opposite ends of each toolkit's
@@ -21,7 +24,7 @@ DEFAULT_APPS = ("markor", "amaze",          # Views
                 "seal", "unitto",           # Compose
                 "joplin", "lesspass")       # React Native
 
-# Identical for both arms. Grading reads these fields instead of parsing the child's prose.
+# Identical for every arm. Grading reads these fields instead of parsing the child's prose.
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -65,13 +68,15 @@ def spec(cell):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="print the matrix, or one cell's prompt")
     ap.add_argument("--apps", default=",".join(DEFAULT_APPS))
+    ap.add_argument("--arms", default=",".join(ARMS))
     ap.add_argument("--reps", type=int, default=2)
     ap.add_argument("--prompt", help="print the full prompt for this cell and exit")
     a = ap.parse_args()
     if a.prompt:
         print(spec(a.prompt)["prompt"])
         sys.exit()
-    ks = cells(tuple(x for x in a.apps.split(",") if x), reps=a.reps)
+    ks = cells(tuple(x for x in a.apps.split(",") if x),
+               tuple(x for x in a.arms.split(",") if x), reps=a.reps)
     print(f"{len(ks)} cells")
     for k in ks:
         print("  ", k)

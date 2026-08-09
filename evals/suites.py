@@ -578,6 +578,19 @@ ARM_BARE = (
 # first bare run wrote a uiautomator-dump wrapper and took zero screenshots all session. That is
 # a fair "no skill" baseline but it is not screenshot-driven CUA, so measuring the latter needs
 # the accessibility tree closed off explicitly rather than merely un-suggested.
+
+# The third arm pins the improvisation the bare arm keeps doing by hand onto a real, maintained
+# tool: DioxusLabs/accessibility-cli, prebuilt into the snapshot and on PATH. Naming the binary
+# and nothing else keeps the prompt asymmetry to one paragraph, exactly as for the other arms.
+ARM_ACLI = (
+    "IMPORTANT — tooling constraint for this run: you must NOT use the "
+    "`android-hybrid-navigation` skill or its `hd` / `hd.py` CLI, even though it is loaded in "
+    "your environment. Do not read its SKILL.md and do not invoke it. Instead drive the emulator "
+    "with `accessibility-cli`, which is already installed and on your PATH (source at "
+    "`~/repos/accessibility-cli`); run `accessibility-cli --platform android --help` to see what "
+    "it offers. Prefer it over raw screenshots for perceiving the screen."
+)
+
 PREAMBLE = """Boot the Android emulator on this machine by running `~/start-emulator.sh` (it takes a
 couple of minutes; the apps below are already installed). The emulator window appears on the
 desktop at DISPLAY :0.
@@ -603,7 +616,7 @@ Do not create any pull request. Do not modify any repository. This is a device-d
 """
 
 
-ARMS = {"hybrid": ARM_HYBRID, "bare": ARM_BARE}
+ARMS = {"hybrid": ARM_HYBRID, "bare": ARM_BARE, "acli": ARM_ACLI}
 
 
 def build_prompt(app_key: str, arm: str) -> str:
