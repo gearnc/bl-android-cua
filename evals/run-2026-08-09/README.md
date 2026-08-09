@@ -6,7 +6,8 @@
 auto-diff change this run motivated.
 
 Headline vs. the [August baseline](../baseline-2026-08/) (126 runs, pre-`--diff`): reliability is
-still at parity (28.2/30 hybrid vs 28.4/30 bare), ACU is still at parity (1.02x, was 1.07x), and
+still at parity (28.2/30 hybrid vs 28.4/30 bare), ACU is still at parity (1.02x, was 1.07x;
+permutation p=0.86 on 12 v 12, i.e. no detectable difference either way), and
 perception tokens moved from 0.94x to **0.50x** hybrid/bare. The tail is where the arms separate:
 worst hybrid run 79k perception tokens vs 186k bare; bare p90 32.6k vs hybrid 20.6k.
 
@@ -28,3 +29,23 @@ default for a re-`see`.
 - `tasks.json` — n_done / n_partial / n_failed per cell
 - `bypass.json` — UI-bypassing shortcut commands per cell
 - `report.md` — the full writeup
+
+## What bounds ACU
+
+ACU tracks agent turns (r=0.77 with iterations, 0.77 with tool calls) far more than it tracks
+perception tokens (r=0.63), and the two arms take the same number of turns: 93.3 hybrid vs 93.0
+bare, at the same batching density (1.50 vs 1.48 UI actions per exec that contains one). A
+30-task suite costs ~3 turns per task whichever way you look at the screen, so cheaper looking
+shows up in tokens, not ACU. Moving ACU needs fewer turns per task — batching whole task
+prologues into one exec, or acting without an intervening observation — not cheaper observation.
+
+## Compose
+
+Compose is the one stack where hybrid lost on perception (1.66x). It is one run: `seal|hybrid|1`
+at 79.2k, of which 49.5k is images from 33 `hd shot` calls; the other three compose hybrid runs
+average 14.9k against bare's 18.7k. The cause was a bug in `hd.py` — `render` only printed
+`checked=` for nodes whose class was Switch/CheckBox/RadioButton/ToggleButton, but Compose emits
+every switch as a bare `android.view.View` with `checkable="true" checked="true|false"`. Toggle
+state was therefore invisible in the profile that also has no labels, and screenshots were the
+only way left to read it. Fixed alongside this archive; `evals/test_toggle_state.py` regresses
+it.
