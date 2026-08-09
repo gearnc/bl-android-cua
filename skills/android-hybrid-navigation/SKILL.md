@@ -7,11 +7,23 @@ description: Token-efficient Android emulator/device navigation for agents — c
 
 Navigate Android UIs by TEXT, not screenshots. A full screenshot costs ~1.5k tokens; a compact
 tree view costs ~200–600. Use the bundled `hd.py` CLI (same directory as this skill) for both
-perception and action. Fall back to screenshots ONLY for visual-only state (colors/themes/images).
+perception and action — install it as `hd` with the one-time setup below. Fall back to
+screenshots ONLY for visual-only state (colors/themes/images).
 
 ## Setup (once per session)
 1. Ensure `adb` is on PATH and a device/emulator is connected (`adb devices`).
-2. `alias hd="python3 <this-skill-dir>/hd.py"` (or call it directly).
+2. Install the `hd` launcher. Run this verbatim — it locates `hd.py` wherever the skill happens
+   to be installed and drops a launcher in `/usr/local/bin`, which is on the default PATH.
+   ```bash
+   HD_PY=$(find "$HOME" /opt/.devin /usr/local/share -name hd.py -path '*android-hybrid-navigation*' -print -quit 2>/dev/null)
+   printf '#!/usr/bin/env bash\nexec python3 "%s" "$@"\n' "$HD_PY" |
+     sudo tee /usr/local/bin/hd >/dev/null && sudo chmod +x /usr/local/bin/hd
+   hd see --find .   # prints the current screen's matching nodes; confirms adb + hd both work
+   ```
+   Do NOT use `alias hd=...`, and do not rely on `~/bin` + `~/.bashrc`: every command you run
+   starts a fresh non-interactive shell, which reads neither. If `sudo` is unavailable, write
+   the launcher to `$HOME/bin/hd` instead and prefix *each* later command with
+   `export PATH="$HOME/bin:$PATH";`.
 3. No device-side install is needed — perception uses `uiautomator dump`.
 4. `hd see` auto-detects the foreground app's UI framework (Views / Compose / React Native)
    and tunes its output; the active profile is printed in the header line. Override with

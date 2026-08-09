@@ -11,7 +11,9 @@ The observation PRIMITIVE adapts to the detected framework:
 
 Perception: `adb shell uiautomator dump` rendered as a compact indexed node list, with
 perception defaults auto-tuned to the foreground app's UI framework (Views / Jetpack Compose /
-React Native), detected once per app and cached. Override with HD_PROFILE=views|compose|rn.
+React Native). The app's toolkit capability is probed from its APK once and cached; which
+toolkit a given SCREEN renders with is then decided from the tree, since apps mix the two.
+Override with HD_PROFILE=views|compose|rn.
 Action: coordinate taps/swipes/keys via `adb shell input` (never a11y performAction).
 Text: `adb shell input text` (injects below the IME — host-keyboard-proof).
 Screenshots: explicit `shot` verb only.
@@ -33,7 +35,7 @@ Verbs:
   hd wait-idle [--timeout S]
 State file: /tmp/hd_last_tree.json (indexes are only valid against the last `see`).
 """
-import json, os, re, subprocess, sys, time
+import json, os, re, shlex, subprocess, sys, time
 import xml.etree.ElementTree as ET
 
 ADB = os.environ.get("HD_ADB", "adb")
@@ -46,6 +48,35 @@ def foreground_pkg():
     m = re.search(r"mCurrentFocus=.*?\s([\w.]+)/", out)
     return m.group(1) if m else None
 
+def apk_contains(pkg, needle):
+    path_out = sh("shell", "pm", "path", pkg)
+    apks = [l.split(":", 1)[1].strip() for l in path_out.splitlines() if l.startswith("package:")]
+    for apk in apks:
+        if subprocess.run([ADB, "shell", f"grep -qm1 {needle} {apk} 2>/dev/null"]).returncode == 0:
+            return True
+    return False
+
+def renders_unlabeled(nodes):
+    """True when this screen looks Compose-rendered rather than View-rendered.
+
+    Compose emits anonymous `View` nodes carrying neither a resource-id nor text, so they are
+    reachable only through adopt_labels' near:"label" hints; inflated Views keep their ids.
+    Measured across 25 apps, resource-id density over informative nodes separates them cleanly:
+    0.48-0.82 View-rendered vs 0.02-0.15 Compose-rendered, so the threshold sits in the middle
+    of that empty band. The share of clickables that are anonymous corroborates it, but only
+    once there are enough clickables to be meaningful.
+    """
+    ID_DENSITY_MAX = 0.35
+    informative = [n for n in nodes if is_informative(n)] or nodes
+    if not informative:
+        return False
+    id_frac = sum(1 for n in informative if n["id"]) / len(informative)
+    clickable = [n for n in nodes if n["clickable"]]
+    anonymous = sum(1 for n in clickable
+                    if n["class"] == "View" and not n["text"] and not n["desc"])
+    corroborated = len(clickable) < 3 or anonymous / len(clickable) >= 0.5
+    return id_frac < ID_DENSITY_MAX and corroborated
+
 def detect_profile(nodes):
     forced = os.environ.get("HD_PROFILE")
     if forced:
@@ -55,18 +86,25 @@ def detect_profile(nodes):
     pkg = foreground_pkg()
     if not pkg:
         return "views", "(unknown pkg)"
+    # The cache holds the package's toolkit CAPABILITY (from its APK, one adb probe per app),
+    # never the per-screen verdict: apps mix toolkits screen by screen.
     cache = json.load(open(FW_CACHE)) if os.path.exists(FW_CACHE) else {}
     if pkg not in cache:
-        path_out = sh("shell", "pm", "path", pkg)
-        apks = [l.split(":", 1)[1].strip() for l in path_out.splitlines() if l.startswith("package:")]
-        prof = "views"
-        for apk in apks:
-            r = subprocess.run([ADB, "shell", f"grep -qm1 libreactnative {apk} 2>/dev/null"])
-            if r.returncode == 0:
-                prof = "rn"; break
-        cache[pkg] = prof
+        cache[pkg] = ("rn" if apk_contains(pkg, "libreactnative")
+                      else "compose-capable" if apk_contains(pkg, "androidx.compose")
+                      else "views")
         json.dump(cache, open(FW_CACHE, "w"))
-    return cache[pkg], pkg
+    if cache[pkg] == "rn":
+        return "rn", pkg
+    if cache[pkg] == "compose-capable":
+        # Plenty of Compose apps expose no ComposeView node (Seal, Unitto, InnerTune), so the
+        # APK is the only hint they are Compose at all. But shipping Compose does not mean a
+        # given screen renders that way --- Material Files draws a fully labeled View tree --- so
+        # the tree decides, at zero extra adb cost.
+        if not renders_unlabeled(nodes):
+            return "views", f"{pkg} (compose in apk, but this screen renders labeled)"
+        return "compose", f"{pkg} (compose in apk + unlabeled tree)"
+    return "views", pkg
 
 def sh(*args, binary=False, timeout=30):
     r = subprocess.run([ADB, *args], capture_output=True, timeout=timeout)
@@ -219,6 +257,11 @@ def tap(index, long=False):
 
 KEYS = {"back": "4", "home": "3", "enter": "66", "tab": "61", "delete": "67", "appswitch": "187"}
 
+def screen_size():
+    out = sh("shell", "wm", "size")
+    m = re.search(r"Override size:\s*(\d+)x(\d+)", out) or re.search(r"Physical size:\s*(\d+)x(\d+)", out)
+    return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
+
 def main():
     a = sys.argv[1:]
     if not a:
@@ -236,14 +279,22 @@ def main():
     elif cmd == "longpress-xy":
         sh("shell", "input", "swipe", a[1], a[2], a[1], a[2], "800"); print(f"long-pressed ({a[1]},{a[2]})")
     elif cmd == "type":
-        text = a[1].replace(" ", "%s")
-        sh("shell", "input", "text", text); print(f"typed {a[1]!r}")
+        # `adb shell` concatenates its arguments and runs them through the device shell, so the
+        # text has to survive that shell: quote it, and keep %s for spaces (input text splits on
+        # them). Without quoting, any of ()&;<>|'"$` aborts the command with a syntax error.
+        sh("shell", "input", "text", shlex.quote(a[1].replace(" ", "%s")))
+        print(f"typed {a[1]!r}")
     elif cmd == "key":
         sh("shell", "input", "keyevent", KEYS.get(a[1], a[1])); print(f"key {a[1]}")
     elif cmd == "swipe":
         d = a[1]; steps = 300
-        coords = {"up": (540, 1600, 540, 700), "down": (540, 700, 540, 1600),
-                  "left": (900, 1200, 200, 1200), "right": (200, 1200, 900, 1200)}[d]
+        # Scale to the real display: fixed 1080x2400 coordinates fall off the bottom of any
+        # shorter screen, where the swipe silently does nothing.
+        w, h = screen_size()
+        lo_y, hi_y = int(h * 0.30), int(h * 0.70)
+        lo_x, hi_x = int(w * 0.20), int(w * 0.80)
+        coords = {"up": (w // 2, hi_y, w // 2, lo_y), "down": (w // 2, lo_y, w // 2, hi_y),
+                  "left": (hi_x, h // 2, lo_x, h // 2), "right": (lo_x, h // 2, hi_x, h // 2)}[d]
         sh("shell", "input", "swipe", *map(str, coords), str(steps)); print(f"swiped {d}")
     elif cmd == "shot":
         open(a[1], "wb").write(sh("exec-out", "screencap", "-p", binary=True))
