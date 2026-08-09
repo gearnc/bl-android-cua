@@ -1,0 +1,8 @@
+{
+  "name": "android-cua",
+  "version": "1.0.0",
+  "description": "Token-efficient Android UI navigation for agents: the android-hybrid-navigation skill (framework-adaptive accessibility-tree perception, adb coordinate actions, earned-shortcut batching) with its bundled hd CLI.",
+  "repository": "https://github.com/COG-GTM/bl-android-cua",
+  "license": "MIT",
+  "keywords": ["android", "adb", "computer-use", "emulator", "uiautomator"]
+}
