@@ -11,7 +11,7 @@ Devin skill plugin for token-efficient Android computer use (CUA).
     (action batching on stable layouts, coordinate reuse), screenshots only for
     visual-only state.
   - `hd.py` — the bundled zero-dependency CLI (Python 3 stdlib + adb) the skill drives:
-    `hd see [--full|--find PAT]`, `hd tap/longpress <index>`, `hd tap-xy/longpress-xy`,
+    `hd see [--full|--find PAT|--diff]`, `hd tap/longpress <index>`, `hd tap-xy/longpress-xy`,
     `hd type`, `hd key`, `hd swipe`, `hd shot`, `hd wait-idle`.
 
 ## Install
