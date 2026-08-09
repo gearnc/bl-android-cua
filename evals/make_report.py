@@ -2,6 +2,9 @@
 
 Deliberately states facts and leaves the conclusions to whoever reads it — the one interpretation
 baked in is the labelling of the bare arm, which the transcripts have repeatedly justified.
+
+Handles any subset of the arms in `plan.ARMS`; every ratio is against `bare`, the arm handed no
+tool at all.
 """
 import collections
 import json
@@ -12,7 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from paths import BYPASS, DATA  # noqa: E402
-from report import cell, load  # noqa: E402
+from plan import BASELINE  # noqa: E402
+from report import arms_in, cell, load  # noqa: E402
 from suites import APPS  # noqa: E402
 
 rows = load()
@@ -26,8 +30,10 @@ for r in rows:
     b = byp.get(f"{r['app']}|{r['arm']}|{r['rep']}", {})
     r["writes"] = b.get("writes", 0)
 
-H = [r for r in rows if r["arm"] == "hybrid"]
-B = [r for r in rows if r["arm"] == "bare"]
+ARMS = arms_in(rows)
+OTHERS = [a for a in ARMS if a != BASELINE]
+A = {a: [r for r in rows if r["arm"] == a] for a in ARMS}
+B = A.get(BASELINE, [])
 apps = sorted({r["app"] for r in rows})
 reps = max(r["rep"] for r in rows)
 
@@ -46,8 +52,8 @@ def num(x, scale):
 
 def dist(field):
     out = []
-    for name, arm in (("hybrid", H), ("bare", B)):
-        xs = sorted(r[field] for r in arm)
+    for name in ARMS:
+        xs = sorted(r[field] for r in A[name])
         sd = s.stdev(xs) if len(xs) > 1 else 0.0
         sc = max(r[field] for r in rows)
         out.append(f"| {LABEL.get(field, field)} | {name} | {num(s.mean(xs), sc)} | "
@@ -56,28 +62,33 @@ def dist(field):
     return "\n".join(out)
 
 
-def ratio(field):
-    hm, bm = s.mean([r[field] for r in H]), s.mean([r[field] for r in B])
-    return hm / bm if bm else 0.0
+def ratio(field, arm):
+    """`arm` against the baseline arm on the mean of `field`."""
+    am, bm = s.mean([r[field] for r in A[arm]]), s.mean([r[field] for r in B])
+    return am / bm if bm else 0.0
+
+
+def ratios(field):
+    return ", ".join(f"{a} **{ratio(field, a):.2f}x**" for a in OTHERS)
 
 
 def table(rows, group, field, title):
     """Markdown version of report.py's stdout table — same numbers, rendered for a reader."""
-    out = ["", f"{title}", "",
-           f"| {group} | hybrid mean | cv | bare mean | cv | hybrid/bare |",
-           "|---|---:|---:|---:|---:|---:|"]
+    head = f"| {group} |" + "".join(f" {a} mean | cv |" for a in ARMS) \
+        + "".join(f" {a}/{BASELINE} |" for a in OTHERS)
+    out = ["", f"{title}", "", head,
+           "|---|" + "---:|" * (2 * len(ARMS) + len(OTHERS))]
     groups = sorted({r[group] for r in rows}) + [None]   # None = the ALL row
     sc = max(r[field] for r in rows if r.get(field) is not None)
     for g in groups:
         sel = [r for r in rows if g is None or r[group] == g]
-        h = [r for r in sel if r["arm"] == "hybrid"]
-        b = [r for r in sel if r["arm"] == "bare"]
-        if not h or not b:
+        m = {a: cell([r for r in sel if r["arm"] == a], field) for a in ARMS}
+        if not all(m[a][2] for a in ARMS):
             continue
-        hm, hcv, _ = cell(h, field)
-        bm, bcv, _ = cell(b, field)
-        out.append(f"| {g or '**all**'} | {num(hm, sc)} | {hcv:.2f} | {num(bm, sc)} | {bcv:.2f} | "
-                   f"{hm / bm if bm else 0:.2f}x |")
+        base = m[BASELINE][0]
+        out.append(f"| {g or '**all**'} |"
+                   + "".join(f" {num(m[a][0], sc)} | {m[a][1]:.2f} |" for a in ARMS)
+                   + "".join(f" {(m[a][0] / base if base else 0):.2f}x |" for a in OTHERS))
     return "\n".join(out)
 
 
@@ -103,8 +114,18 @@ else:
                "different experiments; read the per-run screenshot counts before quoting it.")
 
 
+# One sentence per arm, so a run of a subset of the matrix does not describe arms it never ran.
+ARM_DESC = {
+    "hybrid": "hybrid was told only to use whatever tooling it has",
+    "bare": "bare was forbidden the skill",
+    "acli": "acli was forbidden the skill and pointed at the prebuilt `accessibility-cli` binary",
+}
+TITLE = {"hybrid": "android-hybrid-navigation", "bare": "unguided agent",
+         "acli": "accessibility-cli"}
+
+
 def worst(arm, field):
-    r = max(arm, key=lambda r: r[field])
+    r = max(A[arm], key=lambda r: r[field])
     return f"{r[field]:,.0f} ({r['app']}|{r['arm']}|{r['rep']})"
 
 
@@ -117,31 +138,35 @@ def billed_section():
     """
     if not all("billed_tokens" in r for r in rows):
         return ""
-    def med(arm, f):
-        return s.median([r[f] for r in arm])
     out = ["", "### Billed input tokens (what ACU tracks)", "",
-           "| | hybrid | bare |", "|---|---:|---:|"]
+           "| |" + "".join(f" {a} |" for a in ARMS), "|---|" + "---:|" * len(ARMS)]
     for label, f, scale in (("billed input, median", "billed_tokens", 1e6),
                             ("billed input, mean", "billed_tokens", 1e6),
                             ("peak resident context", "peak_context", 1),
                             ("turns", "turns", 1),
                             ("perception tokens", "perception_tokens", 1)):
         agg = s.median if "median" in label else s.mean
-        h, b = agg([r[f] for r in H]), agg([r[f] for r in B])
         fmt = (lambda x: f"{x / 1e6:.2f} Mtok") if scale > 1 else (lambda x: f"{x:,.0f}")
-        out.append(f"| {label} | {fmt(h)} | {fmt(b)} |")
-    hb, bb = med(H, "billed_tokens"), med(B, "billed_tokens")
-    share = 100 * s.mean([r["perception_tokens"] for r in H]) / hb
+        out.append(f"| {label} |" + "".join(f" {fmt(agg([r[f] for r in A[a]]))} |" for a in ARMS))
+    med = {a: s.median([r["billed_tokens"] for r in A[a]]) for a in ARMS}
+    vs = ", ".join(f"{a} **{med[a] / med[BASELINE] if med[BASELINE] else 0:.2f}x**"
+                   for a in OTHERS)
     out += ["", f"Billed input is the integral of context size over turns, so a token added at "
-                f"turn *i* is charged again at every turn after it. Hybrid/bare on the median "
-                f"run: **{hb / bb:.2f}x** — a perception ratio of "
-                f"{ratio('perception_tokens'):.2f}x does not carry into cost, because a whole "
-                f"run's perception spend is ~{share:.2f}% "
-                f"of what it bills."]
+                f"turn *i* is charged again at every turn after it. Against {BASELINE} on the "
+                f"median run: {vs} — a perception ratio does not carry into cost, because a "
+                f"whole run's perception spend is a fraction of a percent of what it bills."]
     return "\n".join(out)
 
 
 VERB = re.compile(r"\bhd\s+see\b([^;&|\"']*)")
+ACLI = re.compile(r"\baccessibility-cli\b([^;&|\"']*)")
+
+
+def commands():
+    try:
+        return json.load(open(DATA / "exec_commands.json"))
+    except (OSError, ValueError):
+        return None
 
 
 def verbs_section():
@@ -152,9 +177,8 @@ def verbs_section():
     to a `--no-diff` everybody did. So the adoption counts belong in the report, not in a
     one-off analysis.
     """
-    try:
-        cmds = json.load(open(DATA / "exec_commands.json"))
-    except (OSError, ValueError):
+    cmds = commands()
+    if cmds is None or "hybrid" not in ARMS:
         return ""
     n = collections.Counter()
     for k, cs in cmds.items():
@@ -182,14 +206,57 @@ def verbs_section():
     return "\n".join(out)
 
 
-print(f"""# android-hybrid-navigation vs. unguided agent — {len(rows)}-run blinded eval
+def acli_section():
+    """Did the acli arm actually drive the emulator with accessibility-cli?
 
-**Matrix.** {len(apps)} apps x 2 arms x {reps} replicates = {len(rows)} child sessions, Normal
-capability, ~30 machine-verifiable tasks per app, one app per session. Apps:
-{', '.join(apps)}. Every run booted the same emulator snapshot (Android 14, API 34, 720x1280
-@320dpi, F-Droid APKs preinstalled) and ended with a fixed `adb` state dump, so grading is not
-self-report. Arms were blind: hybrid sessions were told only to use whatever tooling they have;
-bare sessions were forbidden from reading or invoking the skill.
+    Same adoption question as `verbs_section`, and the same failure mode: an arm named after a
+    tool it quietly abandoned measures the agent's fallback, not the tool. Runs that never typed
+    the binary are called out by cell, because they have to be excluded before quoting a ratio.
+    """
+    cmds = commands()
+    if cmds is None or "acli" not in ARMS:
+        return ""
+    n = collections.Counter()
+    used = set()
+    for k, cs in cmds.items():
+        if k.split("|")[1] != "acli":
+            continue
+        for c in cs:
+            for flags in ACLI.findall(c):
+                used.add(k)
+                if "--annotate" in flags or "--screenshot" in flags:
+                    n["screenshot / annotate"] += 1
+                elif "-q " in flags or "--query" in flags:
+                    n["-q (CSS-like query)"] += 1
+                elif "--llm" in flags or "--format" in flags or "--json" in flags:
+                    n["--llm (whole tree)"] += 1
+                elif re.search(r"--(adb-|click|press|type|key|focus|tap|mouse-click)", flags):
+                    n["action (tap/type/key/adb-*)"] += 1
+                else:
+                    n["other"] += 1
+    if not n:
+        return ("\n### Did the acli arm use accessibility-cli?\n\n"
+                "**No run typed the binary.** This arm measured the agent's own fallback; do not "
+                "quote it as a measurement of accessibility-cli.")
+    tot = sum(n.values())
+    silent = sorted(k for k in cmds if k.split("|")[1] == "acli" and k not in used)
+    out = ["", "### Did the acli arm use accessibility-cli?", "",
+           f"{len(used)}/{len(A['acli'])} acli runs invoked the binary"
+           + (f"; never typed in: {', '.join(silent)}" if silent else "") + ".", "",
+           "| invocation | calls | share |", "|---|---:|---:|"]
+    for verb, c in n.most_common():
+        out.append(f"| `accessibility-cli {verb}` | {c:,} | {c / tot:.0%} |")
+    return "\n".join(out)
+
+
+print(f"""# {' vs. '.join(TITLE.get(a, a) for a in ARMS)} — {len(rows)}-run blinded eval
+
+**Matrix.** {len(apps)} apps x {len(ARMS)} arms x {reps} replicates = {len(rows)} child sessions,
+Normal capability, ~30 machine-verifiable tasks per app, one app per session. Apps:
+{', '.join(apps)}. Arms: {', '.join(ARMS)}. Every run booted the same emulator snapshot
+(Android 14, API 34, 720x1280 @320dpi, F-Droid APKs preinstalled) and ended with a fixed `adb`
+state dump, so grading is not self-report. Arms were blind and differ by exactly one paragraph:
+{', '.join(ARM_DESC.get(a, a) for a in ARMS)}. Ratios are against **{BASELINE}**.
 
 ## What the bare arm actually does
 
@@ -205,8 +272,8 @@ has flipped between runs of the same matrix.
 
 The opposite failure — completing tasks by writing device state instead of driving the UI
 (`adb shell mkdir` for "create a folder") — is counted too: runs touching device state directly,
-{sum(1 for r in H if r['writes'])}/{len(H)} hybrid vs {sum(1 for r in B if r['writes'])}/{len(B)}
-bare. A large imbalance here invalidates the ACU comparison, because one arm is doing less work.
+{', '.join(f"{sum(1 for r in A[a] if r['writes'])}/{len(A[a])} {a}" for a in ARMS)}.
+A large imbalance here invalidates the ACU comparison, because one arm is doing less work.
 
 ## Headline
 
@@ -217,12 +284,11 @@ bare. A large imbalance here invalidates the ACU comparison, because one arm is 
 {dist('screenshots')}
 {dist('n_done')}
 
-Hybrid/bare ratios: ACU **{ratio('acu'):.2f}x**, perception tokens
-**{ratio('perception_tokens'):.2f}x**, iterations **{ratio('iterations'):.2f}x**, exec calls
-**{ratio('exec_calls'):.2f}x**, tasks done **{ratio('n_done'):.2f}x**.
+Ratios against {BASELINE} — ACU: {ratios('acu')}. Perception tokens:
+{ratios('perception_tokens')}. Iterations: {ratios('iterations')}. Exec calls:
+{ratios('exec_calls')}. Tasks done: {ratios('n_done')}.
 
-Worst run by perception tokens — hybrid {worst(H, 'perception_tokens')},
-bare {worst(B, 'perception_tokens')}.
+Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens')}" for a in ARMS)}.
 
 {table(rows, 'stack', 'acu', '### ACU by stack')}
 {table(rows, 'stack', 'perception_tokens', '### Perception tokens by stack')}
@@ -233,15 +299,16 @@ bare {worst(B, 'perception_tokens')}.
 {table(rows, 'app', 'perception_tokens', '### Perception tokens by app')}
 {billed_section()}
 {verbs_section()}
+{acli_section()}
 
 ## Method notes
 
 - Perception tokens come from each session's final `context_growth_update` event
   (`approx_ant_tokens` per tool, plus image tokens for screenshots) — measured, not estimated
-  from transcripts, and identical bookkeeping for both arms.
+  from transcripts, and identical bookkeeping for every arm.
 - Spread is the coefficient of variation: the arms differ in scale, so an absolute SD would
   flatter whichever arm is cheaper.
-- Some suites cap below 30/30 in BOTH arms because the remaining tasks need an account or a
+- Some suites cap below 30/30 in EVERY arm because the remaining tasks need an account or a
   network service (Jerboa needs a Lemmy login). That is the suite's ceiling, not an arm failing.
 - Raw data: `runs.json` (cell -> session), `metrics.json`, `tasks.json`, `bypass.json`.
 """)
