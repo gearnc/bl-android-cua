@@ -30,14 +30,46 @@ default for a re-`see`.
 - `bypass.json` — UI-bypassing shortcut commands per cell
 - `report.md` — the full writeup
 
-## What bounds ACU
+## What bounds ACU — why 0.50x perception is 1.02x ACU
 
-ACU tracks agent turns (r=0.77 with iterations, 0.77 with tool calls) far more than it tracks
-perception tokens (r=0.63), and the two arms take the same number of turns: 93.3 hybrid vs 93.0
-bare, at the same batching density (1.50 vs 1.48 UI actions per exec that contains one). A
-30-task suite costs ~3 turns per task whichever way you look at the screen, so cheaper looking
-shows up in tokens, not ACU. Moving ACU needs fewer turns per task — batching whole task
-prologues into one exec, or acting without an intervening observation — not cheaper observation.
+ACU is mostly inference, so it tracks *billed* tokens, and billed input is not what a look costs
+once — it is the integral of the resident context over turns, because every token added at turn
+i is re-read at every turn after i. Integrating each run's `current_context_tokens` series
+against `iteration_count` gives billed input directly:
+
+| | hybrid | bare |
+|---|---:|---:|
+| billed input, median | 3.23 Mtok | 3.18 Mtok |
+| billed input, mean | 6.21 Mtok | 4.64 Mtok |
+| peak resident context | 80,288 | 69,278 |
+| turns | 93.3 | 93.0 |
+| perception tokens | 22,305 | 44,624 |
+
+Billed tokens are at parity at the median (the means are skewed by the four >190-iteration runs),
+which is exactly what ACU reports; `acu` correlates 0.72 with billed input and 0.77 with turn
+count. The 22k perception saving is ~1% of a 3.2M billed total — while hybrid *carries* ~11k more
+resident context across ~93 turns, which is ~1M billed tokens on its own. That is where the
+saving goes.
+
+Hybrid's context is the larger one despite the cheaper perception because the two arms buy
+different kinds of token. Hybrid's spend is text that stays: 54.0k bytes/run of `exec` output
+(the trees) vs bare's 32.7k, re-billed on every later turn. Bare's spend is images: 24.2
+screenshots/run arriving through `read` (38.8k of its 47.5k tool tokens), against hybrid's 5.5.
+Bare generates *more* total content (269.9k bytes of main-chain growth vs 209.1k) and still ends
+with a smaller context, so a smaller share of what bare spends stays resident — consistent with
+images not persisting the way text does, though this run doesn't isolate eviction directly. A
+screenshot is expensive once; a tree is cheap and then charged forever.
+
+Worth noting bare's *text* perception is the cheaper of the two (8.1k exec tokens/run vs hybrid's
+13.5k): a grep over a dumped XML returns less than a rendered tree. Hybrid's perception advantage
+is entirely that it does not need the screenshots.
+
+So the lever on ACU is resident tokens per turn, not tokens per look. Defaulting a re-`see` to
+the delta (this PR) is exactly that lever — it adds ~100 tokens to the context instead of
+400-2,000, 59-66% less per re-observation on the bench. Turn count is the other half and the two
+arms are identical there (93.3 vs 93.0, and the same batching density: 1.50 vs 1.48 UI actions
+per exec that contains one), so a 30-task suite costs ~3 turns per task however you look at the
+screen.
 
 ## Compose
 

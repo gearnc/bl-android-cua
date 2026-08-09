@@ -81,7 +81,12 @@ Two checks that decide whether the numbers mean what they appear to:
    `screenshots` per bare run tells you which world you are in: ~2 means improvised tree tooling,
    dozens means real visual CUA. Expect a mix — in the 2026-08-09 run 5/12 bare runs were tree
    tooling and 2/12 were genuine visual CUA, and those two set the arm's tail.
-2. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
+2. **Is a perception ratio being read as a cost ratio?** It is not one. Billed input is the
+   resident context integrated over turns (`billed.py`), so cheap looks that persist can cost
+   more than expensive looks that don't: in the 2026-08-09 run hybrid spent 0.50x the perception
+   tokens and billed the same (median 3.23 vs 3.18 Mtok). Quote perception ratios as perception,
+   and compute billed tokens before claiming a cost win.
+3. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
    deep-link intents. A lopsided count means one arm did less work, and the ACU comparison is void.
 
 ## Files
@@ -92,6 +97,7 @@ Two checks that decide whether the numbers mean what they appear to:
 | `plan.py` | matrix, session specs, structured-output schema |
 | `gather.py` | response parsing for the collection snippets |
 | `collect.py` | `context_growth_update` → per-run metrics |
+| `billed.py` | the same events → billed input tokens (context integrated over turns), which is what ACU actually charges |
 | `bypass.py` | detects UI-bypassing shortcut commands |
 | `report.py`, `make_report.py` | comparison tables and the markdown writeup |
 | `test_detect.py` | framework-detection regression across all 21 apps |
