@@ -67,7 +67,8 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
      observations across 8 apps this cuts the observation by 69% on average, 96–97% when a tap
      only changed a toolbar or a row's state. When the screen turns over entirely, or the last
      `see` is more than 120s old, you get the whole tree — so it is never a trap and there is
-     no flag to remember. `hd see --no-diff` forces the whole tree.
+     no flag to remember, and nothing to opt out of: a delta already carries current indexes,
+     so re-reading the whole tree after a tap buys nothing you did not already have.
    See "Earned shortcuts" below for when to skip the re-observation altogether.
 
 ## Earned shortcuts: don't pay for certainty you already have
@@ -103,7 +104,7 @@ profile=compose  hd see (arrival prints     unlabeled clickable Views are only f
                                             primitive the FIRST time you meet a screen, and a
                                             re-`see` costs only the delta. Re-reading a whole
                                             tree after every tap is the most expensive habit
-                                            in this profile; --no-diff is rarely what you want.
+                                            in this profile — take the delta.
 profile=rn       hd see --find <target>     labels usually hit; --find also matches state
                  then `hd see` on miss      (e.g. --find 'checked=false' lists unchecked
                                             boxes). Re-tap by coords if a tap no-ops.

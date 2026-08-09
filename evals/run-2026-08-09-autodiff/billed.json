@@ -1,0 +1,170 @@
+{
+ "markor|hybrid|1": {
+  "turns": 189,
+  "peak_context": 137361,
+  "billed_tokens": 15049471.0,
+  "resident_share": 2.0497549537372435,
+  "series_points": 8
+ },
+ "markor|hybrid|2": {
+  "turns": 172,
+  "peak_context": 125412,
+  "billed_tokens": 13180449.5,
+  "resident_share": 2.327073196138391,
+  "series_points": 7
+ },
+ "markor|bare|1": {
+  "turns": 145,
+  "peak_context": 121791,
+  "billed_tokens": 10220301.5,
+  "resident_share": 2.14363425476824,
+  "series_points": 8
+ },
+ "markor|bare|2": {
+  "turns": 260,
+  "peak_context": 107212,
+  "billed_tokens": 18963689.5,
+  "resident_share": 0.4194955242607498,
+  "series_points": 8
+ },
+ "amaze|hybrid|1": {
+  "turns": 252,
+  "peak_context": 144516,
+  "billed_tokens": 21963071.5,
+  "resident_share": 1.7151440644479117,
+  "series_points": 7
+ },
+ "amaze|hybrid|2": {
+  "turns": 230,
+  "peak_context": 138406,
+  "billed_tokens": 19167972.5,
+  "resident_share": 1.9703291219132613,
+  "series_points": 7
+ },
+ "amaze|bare|1": {
+  "turns": 180,
+  "peak_context": 123793,
+  "billed_tokens": 13625334.5,
+  "resident_share": 2.0325520320546095,
+  "series_points": 10
+ },
+ "amaze|bare|2": {
+  "turns": 225,
+  "peak_context": 133283,
+  "billed_tokens": 20684543.5,
+  "resident_share": 1.5411269436807558,
+  "series_points": 8
+ },
+ "seal|hybrid|1": {
+  "turns": 172,
+  "peak_context": 114502,
+  "billed_tokens": 12680318.5,
+  "resident_share": 2.2102467988830514,
+  "series_points": 8
+ },
+ "seal|hybrid|2": {
+  "turns": 186,
+  "peak_context": 130043,
+  "billed_tokens": 14993955.5,
+  "resident_share": 2.0486064543454794,
+  "series_points": 8
+ },
+ "seal|bare|1": {
+  "turns": 184,
+  "peak_context": 109761,
+  "billed_tokens": 14384366.0,
+  "resident_share": 1.124299284856299,
+  "series_points": 10
+ },
+ "seal|bare|2": {
+  "turns": 184,
+  "peak_context": 116744,
+  "billed_tokens": 14725368.5,
+  "resident_share": 1.1104675671648274,
+  "series_points": 8
+ },
+ "unitto|hybrid|1": {
+  "turns": 139,
+  "peak_context": 115170,
+  "billed_tokens": 10253954.0,
+  "resident_share": 2.2906211221055757,
+  "series_points": 7
+ },
+ "unitto|hybrid|2": {
+  "turns": 141,
+  "peak_context": 117307,
+  "billed_tokens": 10167229.5,
+  "resident_share": 2.0316694082694093,
+  "series_points": 7
+ },
+ "unitto|bare|1": {
+  "turns": 107,
+  "peak_context": 82136,
+  "billed_tokens": 5681637.5,
+  "resident_share": 1.800773760906517,
+  "series_points": 8
+ },
+ "unitto|bare|2": {
+  "turns": 150,
+  "peak_context": 105857,
+  "billed_tokens": 10748473.0,
+  "resident_share": 1.1139064289304461,
+  "series_points": 8
+ },
+ "joplin|hybrid|1": {
+  "turns": 154,
+  "peak_context": 129784,
+  "billed_tokens": 12689926.5,
+  "resident_share": 2.1824329297844143,
+  "series_points": 8
+ },
+ "joplin|hybrid|2": {
+  "turns": 131,
+  "peak_context": 106179,
+  "billed_tokens": 8989753.5,
+  "resident_share": 2.501059571363947,
+  "series_points": 8
+ },
+ "joplin|bare|1": {
+  "turns": 210,
+  "peak_context": 84333,
+  "billed_tokens": 13751997.5,
+  "resident_share": 0.47738454526267265,
+  "series_points": 8
+ },
+ "joplin|bare|2": {
+  "turns": 155,
+  "peak_context": 95004,
+  "billed_tokens": 10164527.0,
+  "resident_share": 0.792239124716244,
+  "series_points": 8
+ },
+ "lesspass|hybrid|1": {
+  "turns": 96,
+  "peak_context": 85324,
+  "billed_tokens": 5819206.0,
+  "resident_share": 3.0136586042888864,
+  "series_points": 8
+ },
+ "lesspass|hybrid|2": {
+  "turns": 66,
+  "peak_context": 73322,
+  "billed_tokens": 3670401.0,
+  "resident_share": 4.375463128531578,
+  "series_points": 8
+ },
+ "lesspass|bare|1": {
+  "turns": 74,
+  "peak_context": 85356,
+  "billed_tokens": 4158970.0,
+  "resident_share": 2.6722279049684907,
+  "series_points": 8
+ },
+ "lesspass|bare|2": {
+  "turns": 68,
+  "peak_context": 74067,
+  "billed_tokens": 3570345.0,
+  "resident_share": 3.503842077371489,
+  "series_points": 8
+ }
+}

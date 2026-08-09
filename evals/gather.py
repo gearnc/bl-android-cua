@@ -9,7 +9,10 @@ import re
 SID = re.compile(r"session_id[=:]\s*([0-9a-f]{32})")
 CURSOR = re.compile(r"Pass after=(\S+) to fetch")
 EVENT_ID = re.compile(r"\[(event-[0-9a-f]+)\]")
-EXEC_CMD = re.compile(r"exec:\s(.+?)\s\(shell:")
+# The `(shell: <id>)` suffix is only present when the command fits on one line; a multi-line
+# command is listed with its first line and nothing else, so requiring the suffix drops every
+# heredoc and python -c block — which is exactly where a state-writing `adb shell` hides.
+EXEC_CMD = re.compile(r"exec:\s(.+?)(?:\s\(shell:\s*\w+\))?\s*$", re.M)
 
 
 def session_ids(create_output):

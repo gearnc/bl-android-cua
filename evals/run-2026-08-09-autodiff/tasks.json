@@ -1,0 +1,146 @@
+{
+ "markor|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 14.690960484064249
+ },
+ "markor|hybrid|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 12.810587941619186
+ },
+ "markor|bare|1": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 10.724061224090072
+ },
+ "markor|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 22.391638867662707
+ },
+ "amaze|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 19.404948601664636
+ },
+ "amaze|hybrid|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 17.518896261317
+ },
+ "amaze|bare|1": {
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1,
+  "acu": 12.823459614600823
+ },
+ "amaze|bare|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 22.11666569147469
+ },
+ "seal|hybrid|1": {
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0,
+  "acu": 11.832520366975643
+ },
+ "seal|hybrid|2": {
+  "n_done": 26,
+  "n_partial": 3,
+  "n_failed": 1,
+  "acu": 14.290333791022531
+ },
+ "seal|bare|1": {
+  "n_done": 25,
+  "n_partial": 4,
+  "n_failed": 1,
+  "acu": 14.223486931655659
+ },
+ "seal|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 14.886773121104579
+ },
+ "unitto|hybrid|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 10.367488238484723
+ },
+ "unitto|hybrid|2": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 9.998659793384233
+ },
+ "unitto|bare|1": {
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 6.184272193775668
+ },
+ "unitto|bare|2": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "acu": 11.722027045804888
+ },
+ "joplin|hybrid|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "acu": 12.374814773245783
+ },
+ "joplin|hybrid|2": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "acu": 9.05864590963336
+ },
+ "joplin|bare|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "acu": 15.890141255966718
+ },
+ "joplin|bare|2": {
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0,
+  "acu": 10.797658505769471
+ },
+ "lesspass|hybrid|1": {
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1,
+  "acu": 6.238894194175875
+ },
+ "lesspass|hybrid|2": {
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0,
+  "acu": 4.370108524096116
+ },
+ "lesspass|bare|1": {
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0,
+  "acu": 4.953596564884593
+ },
+ "lesspass|bare|2": {
+  "n_done": 27,
+  "n_partial": 1,
+  "n_failed": 1,
+  "acu": 4.555070725651775
+ }
+}
