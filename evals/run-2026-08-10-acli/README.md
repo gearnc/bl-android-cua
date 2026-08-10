@@ -107,6 +107,82 @@ tool.
 **Bypass counts** are balanced (6/12 hybrid, 7/12 bare, 6/12 acli touched device state directly),
 so no app's ACU comparison is void on that ground.
 
+## Why `accessibility-cli` — a resourced, cross-platform tool — was the dearest arm
+
+Its compact look is the smallest thing any arm printed — 29 to 749 characters, against 445 to
+2,752 for `hd see` — and it still ran the most turns (192 vs 173 hybrid, 157 bare), the most
+perception tokens (52.3k vs 36.5k) and 22.2 screenshots a run against hybrid's 5.5. A small look
+that drives more looking is the signature of a look that does not answer the question.
+`evals/test_acli_gaps.py` prices a look in answers rather than characters, on the six matrix
+apps at the tested commit (`03cfeb3`, v0.1.0):
+
+| app | tool | nodes | with coords | labelled | with state | chars |
+|---|---|---:|---:|---:|---:|---:|
+| markor | `hd see` | 5 | 5 | 4 | 0 | 445 |
+| markor | `acli --llm` | 1 | 1 | 1 | 0 | 69 |
+| markor | `acli --llm-query` | 34 | **0** | 5 | 0 | 1,503 |
+| seal | `hd see` | 12 | 12 | 8 | 1 | 927 |
+| seal | `acli --llm` | **0** | 0 | 0 | 0 | 29 |
+| seal | `acli --llm-query` | 35 | **0** | 10 | 1 | 1,318 |
+| unitto | `acli --llm` | **0** | 0 | 0 | 0 | 31 |
+| unitto | `acli --llm-query` | 151 | **0** | 18 | 0 | 5,498 |
+| amaze | `hd see` | 40 | 40 | 23 | 0 | 2,512 |
+| amaze | `acli --llm` | 16 | 16 | 9 | 0 | 615 |
+| lesspass | `acli --llm` | 19 | 19 | 12 | 0 | 734 |
+
+Four things follow, and together they are the arm's whole cost:
+
+1. **On Compose its compact view is empty.** `--llm` printed **zero elements** on seal and unitto
+   — 29 and 31 characters of header. Not "fewer nodes": none. The filter
+   (`api/output.rs:is_llm_relevant`) keeps an element if it `is_interactive()`, and
+   `is_interactive()` is a role test plus `has_activation_action()`, which matches the *macOS*
+   action names `AXPress|AXPick|AXConfirm`. The Android backend
+   (`platform/android.rs`, a `uiautomator dump` shim — "No native accessibility API", its own
+   header says) emits actions named `click`/`longClick`/`toggle`, so that clause is dead on
+   Android and an element survives only if its *class name* maps to a known role. Compose renders
+   everything as bare `android.view.View` → `Role::Unknown` → dropped. `--annotate` marks 2
+   elements on a seal screen where `hd see` lists 12 with 4 clickable and a `checked=false`.
+   This is not a missing feature; it is a desktop-shaped abstraction that the Android port
+   inherits.
+2. **The view that does have the nodes has no coordinates.** `--llm-query` prints the CSS-like
+   tree — 34 to 151 nodes, and **0 with bounds** in every app. So the agent cannot act off the
+   observation it just paid for. What the transcripts actually show is the agent throwing the
+   tree away and keeping the strings: `A --llm-query | grep -o 'title="[^"]*"'` is the acli arm's
+   canonical look, then `--adb-tap 640,635` from a screenshot for the position.
+3. **Selector actions miss, and a miss costs a screenshot.** `--click '[title=X]'` re-finds the
+   node by string. Taking the first labelled clickable off each app's tree, it hit **1 of 4**
+   (`Main View`, `Navigate up`, an icon-font glyph all missed; `Sidebar` hit) — Android titles
+   are frequently a content-description, an icon glyph, or absent. Across the run: 306 `--click`
+   against **221 `--adb-tap`**, i.e. two coordinate taps for every three selector clicks, plus
+   `for i in 1 2 3 4 5; do ... --click; done` retry loops. `hd tap 7` cannot miss this way — the
+   index came off the tree the agent is holding and the verb re-checks the node before tapping.
+4. **Half the arm stopped looking with it.** Adoption 12/12 counts the binary being *typed*,
+   and much of that is `--adb-tap`/`--adb-back`, i.e. an adb wrapper. Counting only *perception*
+   calls, **6 of 12 cells made ≤6 tree looks in the entire run** (`unitto|acli|2`: 1 look in 113
+   commands; `markor|acli|2`: 2; `amaze|acli|2` and `unitto|acli|1`: 3) and three of them took
+   their last one inside the first 8% of the run, finishing on screenshots or on a wrapper they
+   wrote themselves (`see.py`, `conv.py`, `h.sh`'s `d`/`tap`/`ty`). So a good part of the acli arm
+   is a second bare arm that also paid the acli learning cost — 22.9 commands before its first UI
+   action against hybrid's 7.3, including reading 201 lines of `--help`.
+
+Per toolkit this lands where the mechanism predicts — acli is worst exactly where the tree is
+anonymous or the selectors are weakest:
+
+| toolkit | acli ACU | bare ACU | hybrid ACU | acli screenshots |
+|---|---:|---:|---:|---:|
+| Views | 20.0 | 15.0 | 17.6 | 24.8 |
+| Compose | 12.0 | 9.1 | 12.2 | 13.8 |
+| React Native | 12.7 | 10.3 | 9.1 | 28.2 |
+
+The lesson is not that the tool is bad — it is a 32k-line cross-platform tool whose macOS,
+Windows and iOS backends have real accessibility APIs underneath. It is that **an accessibility
+abstraction does not survive the port to Android**, where there is no client-side AX API at all,
+only `uiautomator dump`, and where the dominant UI toolkit emits an unlabelled, role-less tree.
+A per-platform layer (Android roles from `clickable`/`checkable` flags rather than class names,
+bounds in the queryable view, labels adopted from neighbouring text for anonymous Compose nodes,
+index-addressed actions) is what closes it; that is the same list `hd.py` implements, and the
+reason the skill beats it at 0.87x the ACU on 0.70x the perception tokens.
+
 ## Mechanism the run paid for: `--find` silently killed the delta
 
 `hd see --find` is the verb the hybrid arm types most (741 of 1,292 observation calls, 57%). It
