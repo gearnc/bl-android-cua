@@ -14,7 +14,9 @@ Devin skill plugin for token-efficient Android computer use (CUA).
     `hd see [--full|--find PAT|-q]` (a re-`see` prints only the delta; `-q` caches
     the tree and prints nothing), `hd find PAT` (grep the cached tree, no new dump),
     `hd tap/longpress <index>`, `hd tap-xy/longpress-xy`,
-    `hd type`, `hd key`, `hd swipe`, `hd shot`, `hd wait-idle`.
+    `hd type`, `hd key`, `hd swipe`, `hd shot`, `hd wait-idle`. Every action verb takes
+    `-s [PAT]` — act, wait for the screen to settle, then observe, in one command instead of
+    two, because an agent is billed per turn and 96% of its taps are followed by a look.
 
 ## Install
 
