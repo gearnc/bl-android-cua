@@ -275,11 +275,19 @@ def see(full=False, find=None, diff=True, quiet=False):
         base = None  # too old to be the screen you think it is
     baselines = {k: v for k, v in st.get("baselines", {}).items()
                  if now - v.get("ts", 0) <= DIFF_MAX_AGE}
-    baselines[kind] = {"lines": lines, "ts": now}
-    if full:
-        # A forced-full render still knows what the compact view of this screen is, and it costs
-        # nothing to remember: no extra dump, one extra format pass over nodes already parsed.
-        baselines["compact"] = {"lines": render(nodes, False, profile)[1], "ts": now}
+    # A baseline is only what the CALLER WAS SHOWN. `--find` prints matching lines and `-q`
+    # prints nothing, so recording their tree would make the next `see` diff the screen against
+    # a tree nobody read: after `tap; see --find X; see` the delta is empty and the answer is
+    # "no change since the last see" about a screen the caller has never seen. A rendering that
+    # was not printed leaves the previous baseline in place, so the next `see` reports the
+    # change since the last tree that actually reached the caller (or re-renders once it ages
+    # out).
+    if not quiet and not find:
+        baselines[kind] = {"lines": lines, "ts": now}
+        if full:
+            # A printed full render also shows what the compact view of this screen is, and it
+            # costs nothing to remember: no extra dump, one format pass over parsed nodes.
+            baselines["compact"] = {"lines": render(nodes, False, profile)[1], "ts": now}
     json.dump({"nodes": shown, "ts": now, "lines": lines, "mode": mode,
                "size": list(size), "profile": profile, "baselines": baselines}, open(STATE, "w"))
     if quiet:
