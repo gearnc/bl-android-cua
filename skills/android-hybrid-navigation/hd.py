@@ -32,6 +32,10 @@ Verbs:
   hd find PAT                     grep the cached tree — no adb round-trip, only the matching
                                   lines enter the context. Re-observes if the cache is stale.
                                   `hd see -q; hd find Save` is the cheapest observe-and-locate.
+  ANY action verb takes -s/--see [PAT]: do it, wait for the screen to settle, then observe —
+                         one command instead of two, same output. `hd tap 5 -s` prints the delta
+                         the following `hd see` would have; `hd tap 5 -s Save` prints the matches
+                         `hd see --find Save` would. The look is what costs turns, not tokens.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -370,11 +374,43 @@ def screen_size():
     m = re.search(r"Override size:\s*(\d+)x(\d+)", out) or re.search(r"Physical size:\s*(\d+)x(\d+)", out)
     return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
 
+def wait_idle(timeout=5.0):
+    """Block until the focused window stops changing, or `timeout`. Prints nothing."""
+    end = time.time() + timeout
+    prev = None
+    while time.time() < end:
+        cur = sh("shell", "dumpsys", "window", "|", "grep", "-E", "mCurrentFocus")
+        if cur == prev:
+            return True
+        prev = cur
+        time.sleep(0.5)
+    return False
+
+
+ACTIONS = {"tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe"}
+
+
+def see_flag(a):
+    """(observe after the action?, optional --find pattern) from a `-s`/`--see [PAT]`.
+
+    Folding the observation into the action is the whole point: an agent that types
+    `hd tap 5` and then `hd see` pays for two turns to learn one thing, and in the 2026-08-10
+    eval 96% of taps were followed by a look, 32 of them per run as a separate command.
+    """
+    for f in ("-s", "--see"):
+        if f in a:
+            i = a.index(f)
+            nxt = a[i + 1] if len(a) > i + 1 else None
+            return True, (nxt if nxt and not nxt.startswith("-") else None)
+    return False, None
+
+
 def main():
     a = sys.argv[1:]
     if not a:
         sys.exit(__doc__)
     cmd = a[0]
+    observe, pattern = see_flag(a[1:]) if cmd in ACTIONS else (False, None)
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
         see(full="--full" in a, find=find, diff="--no-diff" not in a,
@@ -412,16 +448,12 @@ def main():
         print(f"screenshot -> {a[1]}")
     elif cmd == "wait-idle":
         timeout = float(a[a.index("--timeout") + 1]) if "--timeout" in a else 5.0
-        end = time.time() + timeout
-        prev = None
-        while time.time() < end:
-            cur = sh("shell", "dumpsys", "window", "|", "grep", "-E", "mCurrentFocus")
-            if cur == prev:
-                print("idle"); return
-            prev = cur; time.sleep(0.5)
-        print("timeout (proceeding)")
+        print("idle" if wait_idle(timeout) else "timeout (proceeding)")
     else:
         sys.exit(f"unknown verb {cmd!r}\n{__doc__}")
+    if observe:
+        wait_idle(3.0)
+        see(find=pattern)
 
 if __name__ == "__main__":
     main()
