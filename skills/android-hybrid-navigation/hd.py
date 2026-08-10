@@ -257,11 +257,27 @@ def see(full=False, find=None, diff=True, quiet=False):
         shown, lines = render(nodes, True, profile)
         print(f"# compact view had <{COMPACT_MIN_NODES} nodes; auto-escalated to --full")
     mode = "find" if find else "full" if full else "compact"
-    prev = json.load(open(STATE)) if diff and not quiet and os.path.exists(STATE) else None
-    if prev and time.time() - prev.get("ts", 0) > DIFF_MAX_AGE:
-        prev = None  # too old to be the screen you think it is
-    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": mode,
-               "size": list(size), "profile": profile}, open(STATE, "w"))
+    kind = "full" if full else "compact"
+    st = json.load(open(STATE)) if os.path.exists(STATE) else {}
+    now = time.time()
+    # Baselines are kept per RENDERING, not per verb. `--find` and `-q` render the full tree, so
+    # keying the baseline off the verb meant a `--find` in between two `see`s left nothing a
+    # compact `see` could diff against: 49% of the plain re-observations in the 2026-08-10 run
+    # followed a `--find`, and every one of them printed a whole tree.
+    base = st.get("baselines", {}).get(kind) if diff and not quiet else None
+    # Stale either way: by its own capture time, or by the last observation of any kind, which
+    # is never older than it.
+    if base and max(now - base.get("ts", 0), now - st.get("ts", 0)) > DIFF_MAX_AGE:
+        base = None  # too old to be the screen you think it is
+    baselines = {k: v for k, v in st.get("baselines", {}).items()
+                 if now - v.get("ts", 0) <= DIFF_MAX_AGE}
+    baselines[kind] = {"lines": lines, "ts": now}
+    if full:
+        # A forced-full render still knows what the compact view of this screen is, and it costs
+        # nothing to remember: no extra dump, one extra format pass over nodes already parsed.
+        baselines["compact"] = {"lines": render(nodes, False, profile)[1], "ts": now}
+    json.dump({"nodes": shown, "ts": now, "lines": lines, "mode": mode,
+               "size": list(size), "profile": profile, "baselines": baselines}, open(STATE, "w"))
     if quiet:
         # Capture without printing: the tree is on disk, and `hd find PAT` reads it from there.
         # Costs one line of context instead of the whole screen, for the common case where you
@@ -271,8 +287,8 @@ def see(full=False, find=None, diff=True, quiet=False):
         return
     # Only diff against a tree rendered the same way. A compact tree against a --full one
     # reports every layout container as removed, which is noise, not a change.
-    if diff and not find and prev and prev.get("lines") and prev.get("mode") == mode:
-        added, removed = diff_lines(prev["lines"], lines)
+    if diff and not find and base and base.get("lines"):
+        added, removed = diff_lines(base["lines"], lines)
         out = [f"+ {l}" for l in added] + [f"- {l}" for l in removed]
         # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
         # old tree plus the new one, so a diff would be the more expensive way to say it.

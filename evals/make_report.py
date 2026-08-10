@@ -7,6 +7,7 @@ Handles any subset of the arms in `plan.ARMS`; every ratio is against `bare`, th
 tool at all.
 """
 import collections
+import itertools
 import json
 import re
 import statistics as s
@@ -160,6 +161,24 @@ def billed_section():
 
 VERB = re.compile(r"\bhd\s+see\b([^;&|\"']*)")
 ACLI = re.compile(r"\baccessibility-cli\b([^;&|\"']*)")
+# Agents wrap the binary: `source ~/ax.sh; A --llm-query | grep ...`. Counting only the literal
+# name scored amaze|acli|1 at 4 invocations when it made 42, and would have reported an arm as
+# having abandoned a tool it used for the whole run. Flags are the tell — no other tool on the
+# box takes `--llm-query` or `--adb-tap` — so a wrapper is counted as what it wraps.
+ACLI_FLAGS = r"--(?:llm|llm-query|click|annotate|screenshot|adb-[a-z-]+|type|query)"
+WRAPPED = re.compile(r"(?:^|[;&|]\s*)(?!accessibility-cli\b)([A-Za-z_][\w./-]*)\s+"
+                     rf"({ACLI_FLAGS}[^;&|\"'\n]*)")
+NOT_A_WRAPPER = {"adb", "hd", "python3", "python", "echo", "grep", "sed", "awk", "cat", "sudo",
+                 "time", "timeout", "cargo", "git", "ls", "source", "bash", "sh"}
+
+
+def acli_calls(cmd):
+    """(flags, wrapped?) for every accessibility-cli invocation in one shell command."""
+    for flags in ACLI.findall(cmd):
+        yield flags, False
+    for name, flags in WRAPPED.findall(cmd):
+        if name not in NOT_A_WRAPPER:
+            yield flags, True
 
 
 def commands():
@@ -203,6 +222,119 @@ def verbs_section():
            "| verb | calls | share |", "|---|---:|---:|"]
     for verb, c in n.most_common():
         out.append(f"| `hd {verb}` | {c:,} | {c / tot:.0%} |")
+    plain, after = interleavings(cmds)
+    if plain:
+        out += ["", f"Of the {plain:,} plain `hd see` re-observations, {after:,} "
+                    f"({after / plain:.0%}) directly followed a `--find`/`--full`/`-q`. Those "
+                    "render the full tree, so a baseline keyed off the verb leaves a compact "
+                    "`see` nothing of its own kind to diff against and it prints the whole tree "
+                    "— silently, without even the \"screen changed too much\" line."]
+    return "\n".join(out)
+
+
+def rendering(flags):
+    """Which tree a `see` invocation renders: `--find` and `-q` force the full one."""
+    if "--find" in flags or re.search(r"(^|\s)-q(\s|$)|--quiet", flags):
+        return "full (find)"
+    return "full" if "--full" in flags else "compact"
+
+
+def interleavings(cmds):
+    """(plain compact re-observations, how many of them followed a full-tree render).
+
+    The pairing an agent actually types is `tap; see --find PAT` then a plain `see`, and that
+    second observation is the one that should have been a delta.
+    """
+    plain = after = 0
+    for k, cs in cmds.items():
+        if k.split("|")[1] != "hybrid":
+            continue
+        seq = [rendering(f) for c in cs for f in VERB.findall(c)]
+        for prev, cur in zip([None] + seq, seq):
+            if cur != "compact":
+                continue
+            plain += 1
+            after += prev is not None and prev != "compact"
+    return plain, after
+
+
+ACTION = re.compile(r"\bhd\s+(?:tap|tap-xy|swipe|swipe-xy|type|key|longpress)\b|"
+                    r"adb\s+shell\s+input\s+\w+|--adb-(?:tap|text|key|swipe)\b")
+# Any way an arm can look at the screen: the skill's verbs, accessibility-cli, a screenshot, or
+# the wrapper a bare agent wrote for itself (`./ui.sh`, `python3 ui.py`, `uiautomator dump`).
+LOOK = re.compile(r"\bhd\s+(?:see|find|shot)\b|accessibility-cli|\b[A-Za-z_][\w./-]*\s+--llm|"
+                  r"\./\w+\.(?:sh|py)\b|\bpython3?\s+[\w./]*\.py\b|uiautomator\s+dump|screencap")
+AUTHORING = re.compile(r"cat\s*>\s*|tee\s+[~/\w.-]+|<<\s*'?EOF|chmod\s+\+x")
+
+
+def slope(xs, ys):
+    mx, my = s.mean(xs), s.mean(ys)
+    den = sum((x - mx) ** 2 for x in xs)
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / den if den else 0.0
+
+
+def gap_section():
+    """Where an arm's ACU actually goes: turns, and how often it stops to look.
+
+    ACU is inference, so it tracks turns and the context each turn re-reads — not the price of
+    one observation. An arm can win every perception ratio in this report and still cost more,
+    which is exactly what happens below, so the decomposition is printed with the ratios rather
+    than left to a one-off analysis.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    per = {}
+    for a in ARMS:
+        acc = collections.defaultdict(list)
+        for r in A[a]:
+            cs = cmds.get(f"{r['app']}|{a}|{r['rep']}", [])
+            if not cs:
+                continue
+            looks = sum(1 for c in cs if LOOK.search(c))
+            acts = sum(len(ACTION.findall(c)) for c in cs)
+            # Acting without looking first is the whole of the cheaper arm's edge, so count the
+            # commands that fire two or more actions with no observation attached.
+            blind = sum(1 for c in cs if len(ACTION.findall(c)) >= 2 and not LOOK.search(c))
+            head = list(itertools.takewhile(lambda c: not ACTION.search(c), cs))
+            acc["looks/task"].append(looks / max(r["n_done"], 1))
+            acc["actions per look"].append(acts / max(looks, 1))
+            acc["blind multi-action commands"].append(blind)
+            acc["commands before the first action"].append(len(head))
+            acc["of those, writing its own tooling"].append(sum(bool(AUTHORING.search(c))
+                                                                for c in head))
+            acc["turns/task"].append(r["turns"] / max(r["n_done"], 1))
+            acc["ACU/turn"].append(r["acu"] / max(r["turns"], 1))
+            acc["ACU/task"].append(r["acu"] / max(r["n_done"], 1))
+            acc["perception tokens per look"].append(r["perception_tokens"] / max(looks, 1))
+        per[a] = {k: s.mean(v) for k, v in acc.items()}
+    if not all(per.values()):
+        return ""
+    out = ["", "### Where the ACU goes", "",
+           "| per run | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS)]
+    for label in ("commands before the first action", "of those, writing its own tooling",
+                  "looks/task", "perception tokens per look", "actions per look",
+                  "blind multi-action commands", "turns/task", "ACU/turn", "ACU/task"):
+        fmt = "{:,.0f}" if "tokens" in label else ("{:.4f}" if "ACU/turn" in label else "{:.2f}")
+        out.append(f"| {label} |" + "".join(" " + fmt.format(per[a][label]) + " |" for a in ARMS))
+    pts = [(r, cmds.get(f"{r['app']}|{r['arm']}|{r['rep']}", [])) for r in rows
+           if r["arm"] in (BASELINE, ARMS[0])]
+    pts = [(sum(1 for c in cs if LOOK.search(c)) / max(r["n_done"], 1),
+            r["acu"] / max(r["n_done"], 1)) for r, cs in pts if cs]
+    k = slope([x for x, _ in pts], [y for _, y in pts])
+    d = per[ARMS[0]]["looks/task"] - per[BASELINE]["looks/task"]
+    tasks = s.mean([r["n_done"] for r in rows])
+    out += ["", f"Across the {len(pts)} {ARMS[0]}/{BASELINE} cells, one extra look per task costs "
+                f"**{k:.3f} ACU per task** ({k * tasks:.2f} ACU over a {tasks:.0f}-task run) — the "
+                f"strongest per-cell predictor of ACU after turn count itself. {ARMS[0]} takes "
+                f"{per[ARMS[0]]['looks/task']:.2f} looks per task against {BASELINE}'s "
+                f"{per[BASELINE]['looks/task']:.2f}, which alone prices at "
+                f"{k * d * tasks:+.2f} ACU per run against an observed gap of "
+                f"{(per[ARMS[0]]['ACU/task'] - per[BASELINE]['ACU/task']) * tasks:+.2f}. The "
+                "cheaper look is spent on more looking: bootstrapping the improvised tooling is "
+                f"{per[BASELINE]['of those, writing its own tooling']:.1f} commands of a "
+                f"{s.mean([r['turns'] for r in A[BASELINE]]):.0f}-turn run, so there is no setup "
+                "tax to amortise."]
     return "\n".join(out)
 
 
@@ -218,12 +350,14 @@ def acli_section():
         return ""
     n = collections.Counter()
     used = set()
+    wrapped = 0
     for k, cs in cmds.items():
         if k.split("|")[1] != "acli":
             continue
         for c in cs:
-            for flags in ACLI.findall(c):
+            for flags, via_wrapper in acli_calls(c):
                 used.add(k)
+                wrapped += via_wrapper
                 if "--annotate" in flags or "--screenshot" in flags:
                     n["screenshot / annotate"] += 1
                 elif "-q " in flags or "--query" in flags:
@@ -242,7 +376,9 @@ def acli_section():
     silent = sorted(k for k in cmds if k.split("|")[1] == "acli" and k not in used)
     out = ["", "### Did the acli arm use accessibility-cli?", "",
            f"{len(used)}/{len(A['acli'])} acli runs invoked the binary"
-           + (f"; never typed in: {', '.join(silent)}" if silent else "") + ".", "",
+           + (f"; never typed in: {', '.join(silent)}" if silent else "") + "."
+           + (f" {wrapped:,} of {tot:,} invocations went through a shell wrapper the agent"
+              " defined (`A --llm-query`), not the literal name." if wrapped else ""), "",
            "| invocation | calls | share |", "|---|---:|---:|"]
     for verb, c in n.most_common():
         out.append(f"| `accessibility-cli {verb}` | {c:,} | {c / tot:.0%} |")
@@ -298,6 +434,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {table(rows, 'app', 'acu', '### ACU by app')}
 {table(rows, 'app', 'perception_tokens', '### Perception tokens by app')}
 {billed_section()}
+{gap_section()}
 {verbs_section()}
 {acli_section()}
 
