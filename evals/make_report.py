@@ -7,6 +7,7 @@ Handles any subset of the arms in `plan.ARMS`; every ratio is against `bare`, th
 tool at all.
 """
 import collections
+import itertools
 import json
 import re
 import statistics as s
@@ -257,6 +258,86 @@ def interleavings(cmds):
     return plain, after
 
 
+ACTION = re.compile(r"\bhd\s+(?:tap|tap-xy|swipe|swipe-xy|type|key|longpress)\b|"
+                    r"adb\s+shell\s+input\s+\w+|--adb-(?:tap|text|key|swipe)\b")
+# Any way an arm can look at the screen: the skill's verbs, accessibility-cli, a screenshot, or
+# the wrapper a bare agent wrote for itself (`./ui.sh`, `python3 ui.py`, `uiautomator dump`).
+LOOK = re.compile(r"\bhd\s+(?:see|find|shot)\b|accessibility-cli|\b[A-Za-z_][\w./-]*\s+--llm|"
+                  r"\./\w+\.(?:sh|py)\b|\bpython3?\s+[\w./]*\.py\b|uiautomator\s+dump|screencap")
+AUTHORING = re.compile(r"cat\s*>\s*|tee\s+[~/\w.-]+|<<\s*'?EOF|chmod\s+\+x")
+
+
+def slope(xs, ys):
+    mx, my = s.mean(xs), s.mean(ys)
+    den = sum((x - mx) ** 2 for x in xs)
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / den if den else 0.0
+
+
+def gap_section():
+    """Where an arm's ACU actually goes: turns, and how often it stops to look.
+
+    ACU is inference, so it tracks turns and the context each turn re-reads — not the price of
+    one observation. An arm can win every perception ratio in this report and still cost more,
+    which is exactly what happens below, so the decomposition is printed with the ratios rather
+    than left to a one-off analysis.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    per = {}
+    for a in ARMS:
+        acc = collections.defaultdict(list)
+        for r in A[a]:
+            cs = cmds.get(f"{r['app']}|{a}|{r['rep']}", [])
+            if not cs:
+                continue
+            looks = sum(1 for c in cs if LOOK.search(c))
+            acts = sum(len(ACTION.findall(c)) for c in cs)
+            # Acting without looking first is the whole of the cheaper arm's edge, so count the
+            # commands that fire two or more actions with no observation attached.
+            blind = sum(1 for c in cs if len(ACTION.findall(c)) >= 2 and not LOOK.search(c))
+            head = list(itertools.takewhile(lambda c: not ACTION.search(c), cs))
+            acc["looks/task"].append(looks / max(r["n_done"], 1))
+            acc["actions per look"].append(acts / max(looks, 1))
+            acc["blind multi-action commands"].append(blind)
+            acc["commands before the first action"].append(len(head))
+            acc["of those, writing its own tooling"].append(sum(bool(AUTHORING.search(c))
+                                                                for c in head))
+            acc["turns/task"].append(r["turns"] / max(r["n_done"], 1))
+            acc["ACU/turn"].append(r["acu"] / max(r["turns"], 1))
+            acc["ACU/task"].append(r["acu"] / max(r["n_done"], 1))
+            acc["perception tokens per look"].append(r["perception_tokens"] / max(looks, 1))
+        per[a] = {k: s.mean(v) for k, v in acc.items()}
+    if not all(per.values()):
+        return ""
+    out = ["", "### Where the ACU goes", "",
+           "| per run | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS)]
+    for label in ("commands before the first action", "of those, writing its own tooling",
+                  "looks/task", "perception tokens per look", "actions per look",
+                  "blind multi-action commands", "turns/task", "ACU/turn", "ACU/task"):
+        fmt = "{:,.0f}" if "tokens" in label else ("{:.4f}" if "ACU/turn" in label else "{:.2f}")
+        out.append(f"| {label} |" + "".join(" " + fmt.format(per[a][label]) + " |" for a in ARMS))
+    pts = [(r, cmds.get(f"{r['app']}|{r['arm']}|{r['rep']}", [])) for r in rows
+           if r["arm"] in (BASELINE, ARMS[0])]
+    pts = [(sum(1 for c in cs if LOOK.search(c)) / max(r["n_done"], 1),
+            r["acu"] / max(r["n_done"], 1)) for r, cs in pts if cs]
+    k = slope([x for x, _ in pts], [y for _, y in pts])
+    d = per[ARMS[0]]["looks/task"] - per[BASELINE]["looks/task"]
+    tasks = s.mean([r["n_done"] for r in rows])
+    out += ["", f"Across the {len(pts)} {ARMS[0]}/{BASELINE} cells, one extra look per task costs "
+                f"**{k:.3f} ACU per task** ({k * tasks:.2f} ACU over a {tasks:.0f}-task run) — the "
+                f"strongest per-cell predictor of ACU after turn count itself. {ARMS[0]} takes "
+                f"{per[ARMS[0]]['looks/task']:.2f} looks per task against {BASELINE}'s "
+                f"{per[BASELINE]['looks/task']:.2f}, which alone prices at "
+                f"{k * d * tasks:+.2f} ACU per run against an observed gap of "
+                f"{(per[ARMS[0]]['ACU/task'] - per[BASELINE]['ACU/task']) * tasks:+.2f}. The "
+                "cheaper look is spent on more looking: bootstrapping the improvised tooling is "
+                f"{per[BASELINE]['of those, writing its own tooling']:.1f} commands of a "
+                f"{s.mean([r['turns'] for r in A[BASELINE]]):.0f}-turn run, so there is no setup "
+                "tax to amortise."]
+    return "\n".join(out)
+
+
 def acli_section():
     """Did the acli arm actually drive the emulator with accessibility-cli?
 
@@ -353,6 +434,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {table(rows, 'app', 'acu', '### ACU by app')}
 {table(rows, 'app', 'perception_tokens', '### Perception tokens by app')}
 {billed_section()}
+{gap_section()}
 {verbs_section()}
 {acli_section()}
 

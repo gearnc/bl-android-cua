@@ -70,6 +70,17 @@ Per cell, in one pass (see the playbook for the full snippet):
 | perception tokens, screenshots, iterations | last `context_growth_update` event → `gather.growth` → `collect.metrics` |
 | shortcut commands | all `shell_process_started` events → `gather.exec_commands` → `bypass.classify` |
 
+**Paginate with `first=gather.PAGE` (40), never 100.** A 100-event page overflows the tool's
+output cap on a busy session: it is cut off mid-list but keeps its "More results" cursor, so the
+loop walks on and drops the tail of every page — no error, just fewer events. What you then take
+for the *last* growth event is a mid-run one, and every number derived from it is censored at a
+different iteration in every cell. In the 2026-08-10 run that clipped `amaze|bare|1` at turn 69
+of 243 and reported 11k perception tokens against an actual 38k, while the cells it happened to
+spare read correctly — i.e. it biases the comparison, it does not just add noise.
+`gather.event_ids`/`exec_commands` now raise on a truncated page; halve `first` and refetch the
+same cursor. Cross-check before trusting a collection: the last growth event's `iteration_count`
+should be within a few turns of the last `iteration_stats` event's `iteration`.
+
 Then:
 
 ```bash
@@ -110,7 +121,10 @@ Checks that decide whether the numbers mean what they appear to:
    apps `accessibility-cli --llm` printed 29-749 chars against `hd see`'s 154-2684, because it
    emits only nodes it considers interactive, so a cheaper look here is not yet a cheaper run —
    it may be one that has to look again.
-5. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
+5. **Is the collection complete?** Compare each cell's `iterations` against the last
+   `iteration_stats` event; a cell whose growth series stops early is censored, not cheap (see
+   the pagination note above).
+6. **Is either arm bypassing the UI?** `bypass.py` counts `adb shell mkdir`-style state writes and
    deep-link intents. A lopsided count means one arm did less work, and the ACU comparison is void.
 
 ## Files
@@ -123,6 +137,7 @@ Checks that decide whether the numbers mean what they appear to:
 | `collect.py` | `context_growth_update` → per-run metrics |
 | `billed.py` | the same events → billed input tokens (context integrated over turns), which is what ACU actually charges |
 | `bypass.py` | detects UI-bypassing shortcut commands |
+| `make_report.py` "Where the ACU goes" | looks/task, actions per look, blind batches, ACU/turn — why a cheaper look can still be a dearer run |
 | `report.py`, `make_report.py` | comparison tables and the markdown writeup |
 | `test_detect.py` | framework-detection regression across all 21 apps |
 | `test_diff.py` | bench: whole tree vs delta cost after real actions |

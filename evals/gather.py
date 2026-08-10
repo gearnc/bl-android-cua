@@ -8,6 +8,13 @@ import re
 
 SID = re.compile(r"session_id[=:]\s*([0-9a-f]{32})")
 CURSOR = re.compile(r"Pass after=(\S+) to fetch")
+TRUNCATED = re.compile(r"<truncation_notice>")
+# `first=100` overflows the tool-output cap on a busy session: the page is cut off mid-list, the
+# "More results" cursor survives at the top, so pagination continues and the tail of every page
+# is lost without an error. That silently truncated the 2026-08-10 run's growth series at a
+# different iteration in every cell (28% of one run's turns, 100% of another's) — an arm whose
+# context grows slowly loses the most, which is the arm the comparison is against.
+PAGE = 40
 EVENT_ID = re.compile(r"\[(event-[0-9a-f]+)\]")
 # The `(shell: <id>)` suffix is only present when the command fits on one line; a multi-line
 # command is listed with its first line and nothing else, so requiring the suffix drops every
@@ -25,11 +32,20 @@ def next_cursor(list_output):
     return m.group(1) if m else None
 
 
+def truncated(list_output):
+    """Whether the tool cut this page off — the ids after the cut are gone, not paginated."""
+    return bool(TRUNCATED.search(list_output))
+
+
 def event_ids(list_output):
+    if truncated(list_output):
+        raise ValueError("page truncated — refetch this cursor with a smaller `first`")
     return EVENT_ID.findall(list_output)
 
 
 def exec_commands(list_output):
+    if truncated(list_output):
+        raise ValueError("page truncated — refetch this cursor with a smaller `first`")
     return EXEC_CMD.findall(list_output)
 
 

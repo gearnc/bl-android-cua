@@ -2,22 +2,22 @@
  "markor|hybrid|1": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 5
+  "disk_reads": 7
  },
  "markor|hybrid|2": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 10
+  "disk_reads": 35
  },
  "markor|bare|1": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 10
+  "disk_reads": 20
  },
  "markor|bare|2": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 1
+  "disk_reads": 8
  },
  "markor|acli|1": {
   "writes": 0,
@@ -30,69 +30,69 @@
   "disk_reads": 0
  },
  "amaze|hybrid|1": {
-  "writes": 1,
+  "writes": 5,
   "intents": 0,
-  "disk_reads": 2
+  "disk_reads": 12
  },
  "amaze|hybrid|2": {
-  "writes": 1,
+  "writes": 6,
   "intents": 0,
-  "disk_reads": 4
+  "disk_reads": 21
  },
  "amaze|bare|1": {
-  "writes": 0,
+  "writes": 2,
   "intents": 0,
-  "disk_reads": 5
+  "disk_reads": 24
  },
  "amaze|bare|2": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 6
+  "disk_reads": 18
  },
  "amaze|acli|1": {
-  "writes": 0,
+  "writes": 2,
   "intents": 0,
-  "disk_reads": 3
+  "disk_reads": 23
  },
  "amaze|acli|2": {
   "writes": 1,
   "intents": 0,
-  "disk_reads": 10
+  "disk_reads": 26
  },
  "seal|hybrid|1": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 4
  },
  "seal|hybrid|2": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
   "disk_reads": 2
  },
  "seal|bare|1": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 1
  },
  "seal|bare|2": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 2
  },
  "seal|acli|1": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 2
  },
  "seal|acli|2": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 2
  },
  "unitto|hybrid|1": {
   "writes": 1,
   "intents": 0,
-  "disk_reads": 1
+  "disk_reads": 2
  },
  "unitto|hybrid|2": {
   "writes": 0,
@@ -102,7 +102,7 @@
  "unitto|bare|1": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 2
  },
  "unitto|bare|2": {
   "writes": 0,
@@ -122,22 +122,22 @@
  "joplin|hybrid|1": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 1
+  "disk_reads": 2
  },
  "joplin|hybrid|2": {
-  "writes": 0,
+  "writes": 1,
   "intents": 0,
   "disk_reads": 0
  },
  "joplin|bare|1": {
-  "writes": 0,
+  "writes": 2,
   "intents": 0,
   "disk_reads": 0
  },
  "joplin|bare|2": {
-  "writes": 0,
+  "writes": 2,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 1
  },
  "joplin|acli|1": {
   "writes": 1,
@@ -145,19 +145,19 @@
   "disk_reads": 0
  },
  "joplin|acli|2": {
-  "writes": 0,
+  "writes": 3,
   "intents": 0,
   "disk_reads": 0
  },
  "lesspass|hybrid|1": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 1
  },
  "lesspass|hybrid|2": {
   "writes": 0,
   "intents": 0,
-  "disk_reads": 0
+  "disk_reads": 3
  },
  "lesspass|bare|1": {
   "writes": 1,

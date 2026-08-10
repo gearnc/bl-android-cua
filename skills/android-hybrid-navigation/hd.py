@@ -262,7 +262,7 @@ def see(full=False, find=None, diff=True, quiet=False):
     now = time.time()
     # Baselines are kept per RENDERING, not per verb. `--find` and `-q` render the full tree, so
     # keying the baseline off the verb meant a `--find` in between two `see`s left nothing a
-    # compact `see` could diff against: 39% of the plain re-observations in the 2026-08-10 run
+    # compact `see` could diff against: 49% of the plain re-observations in the 2026-08-10 run
     # followed a `--find`, and every one of them printed a whole tree.
     base = st.get("baselines", {}).get(kind) if diff and not quiet else None
     # Stale either way: by its own capture time, or by the last observation of any kind, which

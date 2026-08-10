@@ -6,8 +6,8 @@ next plain `hd see` had no baseline of its own kind and printed the entire compa
 of a delta — silently, without even the "screen changed too much" line.
 
 That is not a rare interleaving. `--find` is the verb agents type most: over the 12 hybrid runs
-of the 2026-08-10 A/B/C, 356 of 628 observation calls were `hd see --find`, and 73 of the 185
-plain `hd see` re-observations (39%) directly followed a `--find`/`--full`/`-q`.
+of the 2026-08-10 A/B/C, 741 of 1,292 observation calls were `hd see --find`, and 242 of the 495
+plain `hd see` re-observations (49%) directly followed a `--find`/`--full`/`-q`.
 
 The fix keys baselines off the RENDERING (compact vs full) rather than the verb, and has a
 forced-full render also remember the compact view of the same nodes — no extra dump, one extra
