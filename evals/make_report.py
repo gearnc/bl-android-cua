@@ -160,6 +160,24 @@ def billed_section():
 
 VERB = re.compile(r"\bhd\s+see\b([^;&|\"']*)")
 ACLI = re.compile(r"\baccessibility-cli\b([^;&|\"']*)")
+# Agents wrap the binary: `source ~/ax.sh; A --llm-query | grep ...`. Counting only the literal
+# name scored amaze|acli|1 at 4 invocations when it made 42, and would have reported an arm as
+# having abandoned a tool it used for the whole run. Flags are the tell — no other tool on the
+# box takes `--llm-query` or `--adb-tap` — so a wrapper is counted as what it wraps.
+ACLI_FLAGS = r"--(?:llm|llm-query|click|annotate|screenshot|adb-[a-z-]+|type|query)"
+WRAPPED = re.compile(r"(?:^|[;&|]\s*)(?!accessibility-cli\b)([A-Za-z_][\w./-]*)\s+"
+                     rf"({ACLI_FLAGS}[^;&|\"'\n]*)")
+NOT_A_WRAPPER = {"adb", "hd", "python3", "python", "echo", "grep", "sed", "awk", "cat", "sudo",
+                 "time", "timeout", "cargo", "git", "ls", "source", "bash", "sh"}
+
+
+def acli_calls(cmd):
+    """(flags, wrapped?) for every accessibility-cli invocation in one shell command."""
+    for flags in ACLI.findall(cmd):
+        yield flags, False
+    for name, flags in WRAPPED.findall(cmd):
+        if name not in NOT_A_WRAPPER:
+            yield flags, True
 
 
 def commands():
@@ -203,7 +221,40 @@ def verbs_section():
            "| verb | calls | share |", "|---|---:|---:|"]
     for verb, c in n.most_common():
         out.append(f"| `hd {verb}` | {c:,} | {c / tot:.0%} |")
+    plain, after = interleavings(cmds)
+    if plain:
+        out += ["", f"Of the {plain:,} plain `hd see` re-observations, {after:,} "
+                    f"({after / plain:.0%}) directly followed a `--find`/`--full`/`-q`. Those "
+                    "render the full tree, so a baseline keyed off the verb leaves a compact "
+                    "`see` nothing of its own kind to diff against and it prints the whole tree "
+                    "— silently, without even the \"screen changed too much\" line."]
     return "\n".join(out)
+
+
+def rendering(flags):
+    """Which tree a `see` invocation renders: `--find` and `-q` force the full one."""
+    if "--find" in flags or re.search(r"(^|\s)-q(\s|$)|--quiet", flags):
+        return "full (find)"
+    return "full" if "--full" in flags else "compact"
+
+
+def interleavings(cmds):
+    """(plain compact re-observations, how many of them followed a full-tree render).
+
+    The pairing an agent actually types is `tap; see --find PAT` then a plain `see`, and that
+    second observation is the one that should have been a delta.
+    """
+    plain = after = 0
+    for k, cs in cmds.items():
+        if k.split("|")[1] != "hybrid":
+            continue
+        seq = [rendering(f) for c in cs for f in VERB.findall(c)]
+        for prev, cur in zip([None] + seq, seq):
+            if cur != "compact":
+                continue
+            plain += 1
+            after += prev is not None and prev != "compact"
+    return plain, after
 
 
 def acli_section():
@@ -218,12 +269,14 @@ def acli_section():
         return ""
     n = collections.Counter()
     used = set()
+    wrapped = 0
     for k, cs in cmds.items():
         if k.split("|")[1] != "acli":
             continue
         for c in cs:
-            for flags in ACLI.findall(c):
+            for flags, via_wrapper in acli_calls(c):
                 used.add(k)
+                wrapped += via_wrapper
                 if "--annotate" in flags or "--screenshot" in flags:
                     n["screenshot / annotate"] += 1
                 elif "-q " in flags or "--query" in flags:
@@ -242,7 +295,9 @@ def acli_section():
     silent = sorted(k for k in cmds if k.split("|")[1] == "acli" and k not in used)
     out = ["", "### Did the acli arm use accessibility-cli?", "",
            f"{len(used)}/{len(A['acli'])} acli runs invoked the binary"
-           + (f"; never typed in: {', '.join(silent)}" if silent else "") + ".", "",
+           + (f"; never typed in: {', '.join(silent)}" if silent else "") + "."
+           + (f" {wrapped:,} of {tot:,} invocations went through a shell wrapper the agent"
+              " defined (`A --llm-query`), not the literal name." if wrapped else ""), "",
            "| invocation | calls | share |", "|---|---:|---:|"]
     for verb, c in n.most_common():
         out.append(f"| `accessibility-cli {verb}` | {c:,} | {c / tot:.0%} |")

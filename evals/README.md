@@ -128,6 +128,7 @@ Checks that decide whether the numbers mean what they appear to:
 | `test_diff.py` | bench: whole tree vs delta cost after real actions |
 | `test_autodiff.py` | bench: what the DEFAULT `hd see` costs in the observe->act->observe loop, plus the turn-over and stale-baseline fallbacks |
 | `test_no_diff_affordance.py` | bench + regression: `--no-diff` still works but is advertised nowhere, and what one `--no-diff` re-read costs against the default delta |
+| `test_find_baseline.py` | bench + regression: a `--find` between two `see`s must not cost the whole tree (set `HD_PY_OLD=` to price it against another revision) |
 | `test_toggle_state.py` | regression: a checkable node must render its `checked=` state (set `HD_PY=` to run it against another revision) |
 | `test_capture_retrieval.py` | bench: `hd see -q` + `hd find` (capture once, print only matches) vs printing the tree — cost *and* recall, since cheaper retrieval that misses nodes is not cheaper |
 | `test_dumps.py` | checks every suite's verification dump runs clean |

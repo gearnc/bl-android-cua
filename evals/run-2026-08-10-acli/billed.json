@@ -1,0 +1,218 @@
+{
+ "markor|hybrid|1": {
+  "series_points": 8,
+  "turns": 61,
+  "peak_context": 63689,
+  "billed_tokens": 2958127.5
+ },
+ "markor|hybrid|2": {
+  "series_points": 8,
+  "turns": 63,
+  "peak_context": 68192,
+  "billed_tokens": 3221858.0
+ },
+ "markor|bare|1": {
+  "series_points": 8,
+  "turns": 67,
+  "peak_context": 60747,
+  "billed_tokens": 3184838.0
+ },
+ "markor|bare|2": {
+  "series_points": 8,
+  "turns": 65,
+  "peak_context": 59247,
+  "billed_tokens": 2931859.0
+ },
+ "markor|acli|1": {
+  "series_points": 8,
+  "turns": 65,
+  "peak_context": 66521,
+  "billed_tokens": 3245273.0
+ },
+ "markor|acli|2": {
+  "series_points": 8,
+  "turns": 70,
+  "peak_context": 64680,
+  "billed_tokens": 3506245.0
+ },
+ "amaze|hybrid|1": {
+  "series_points": 8,
+  "turns": 242,
+  "peak_context": 160329,
+  "billed_tokens": 23409613.5
+ },
+ "amaze|hybrid|2": {
+  "series_points": 8,
+  "turns": 266,
+  "peak_context": 145349,
+  "billed_tokens": 23732021.0
+ },
+ "amaze|bare|1": {
+  "series_points": 8,
+  "turns": 69,
+  "peak_context": 66626,
+  "billed_tokens": 3537631.0
+ },
+ "amaze|bare|2": {
+  "series_points": 8,
+  "turns": 69,
+  "peak_context": 68933,
+  "billed_tokens": 3427800.5
+ },
+ "amaze|acli|1": {
+  "series_points": 8,
+  "turns": 308,
+  "peak_context": 139350,
+  "billed_tokens": 28135957.5
+ },
+ "amaze|acli|2": {
+  "series_points": 8,
+  "turns": 284,
+  "peak_context": 150305,
+  "billed_tokens": 26240110.5
+ },
+ "seal|hybrid|1": {
+  "series_points": 8,
+  "turns": 55,
+  "peak_context": 62623,
+  "billed_tokens": 2641572.0
+ },
+ "seal|hybrid|2": {
+  "series_points": 8,
+  "turns": 53,
+  "peak_context": 63413,
+  "billed_tokens": 2652177.5
+ },
+ "seal|bare|1": {
+  "series_points": 8,
+  "turns": 54,
+  "peak_context": 55031,
+  "billed_tokens": 2252548.0
+ },
+ "seal|bare|2": {
+  "series_points": 8,
+  "turns": 49,
+  "peak_context": 57689,
+  "billed_tokens": 2123230.0
+ },
+ "seal|acli|1": {
+  "series_points": 8,
+  "turns": 220,
+  "peak_context": 122392,
+  "billed_tokens": 16869609.5
+ },
+ "seal|acli|2": {
+  "series_points": 8,
+  "turns": 57,
+  "peak_context": 53046,
+  "billed_tokens": 2414979.0
+ },
+ "unitto|hybrid|1": {
+  "series_points": 8,
+  "turns": 61,
+  "peak_context": 65273,
+  "billed_tokens": 2983282.5
+ },
+ "unitto|hybrid|2": {
+  "series_points": 8,
+  "turns": 64,
+  "peak_context": 68019,
+  "billed_tokens": 3281236.0
+ },
+ "unitto|bare|1": {
+  "series_points": 8,
+  "turns": 62,
+  "peak_context": 65034,
+  "billed_tokens": 3002764.5
+ },
+ "unitto|bare|2": {
+  "series_points": 8,
+  "turns": 59,
+  "peak_context": 59223,
+  "billed_tokens": 2625365.0
+ },
+ "unitto|acli|1": {
+  "series_points": 8,
+  "turns": 57,
+  "peak_context": 63367,
+  "billed_tokens": 2629420.0
+ },
+ "unitto|acli|2": {
+  "series_points": 8,
+  "turns": 53,
+  "peak_context": 62474,
+  "billed_tokens": 2473489.0
+ },
+ "joplin|hybrid|1": {
+  "series_points": 8,
+  "turns": 62,
+  "peak_context": 69073,
+  "billed_tokens": 3167956.5
+ },
+ "joplin|hybrid|2": {
+  "series_points": 8,
+  "turns": 73,
+  "peak_context": 73670,
+  "billed_tokens": 3877661.0
+ },
+ "joplin|bare|1": {
+  "series_points": 8,
+  "turns": 81,
+  "peak_context": 63302,
+  "billed_tokens": 4119231.0
+ },
+ "joplin|bare|2": {
+  "series_points": 8,
+  "turns": 70,
+  "peak_context": 78690,
+  "billed_tokens": 3799028.0
+ },
+ "joplin|acli|1": {
+  "series_points": 8,
+  "turns": 62,
+  "peak_context": 67394,
+  "billed_tokens": 2981554.5
+ },
+ "joplin|acli|2": {
+  "series_points": 8,
+  "turns": 52,
+  "peak_context": 60338,
+  "billed_tokens": 2322348.5
+ },
+ "lesspass|hybrid|1": {
+  "series_points": 8,
+  "turns": 62,
+  "peak_context": 69657,
+  "billed_tokens": 3248073.0
+ },
+ "lesspass|hybrid|2": {
+  "series_points": 8,
+  "turns": 60,
+  "peak_context": 69204,
+  "billed_tokens": 3056602.5
+ },
+ "lesspass|bare|1": {
+  "series_points": 8,
+  "turns": 63,
+  "peak_context": 64014,
+  "billed_tokens": 2900576.5
+ },
+ "lesspass|bare|2": {
+  "series_points": 8,
+  "turns": 67,
+  "peak_context": 81570,
+  "billed_tokens": 4141462.0
+ },
+ "lesspass|acli|1": {
+  "series_points": 8,
+  "turns": 64,
+  "peak_context": 68446,
+  "billed_tokens": 3206367.5
+ },
+ "lesspass|acli|2": {
+  "series_points": 8,
+  "turns": 55,
+  "peak_context": 66353,
+  "billed_tokens": 2642841.0
+ }
+}
