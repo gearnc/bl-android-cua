@@ -148,3 +148,5 @@ Checks that decide whether the numbers mean what they appear to:
 | `test_capture_retrieval.py` | bench: `hd see -q` + `hd find` (capture once, print only matches) vs printing the tree — cost *and* recall, since cheaper retrieval that misses nodes is not cheaper |
 | `test_dumps.py` | checks every suite's verification dump runs clean |
 | `test_acli.py` | smoke test + bench: `accessibility-cli` observation cost vs `hd see`, per app |
+| `test_acli_gaps.py` | bench: what an `accessibility-cli` look *answers* (nodes, coordinates, labels, state) vs `hd see`, and whether its selector actions hit |
+| `test_act_see.py` | bench + regression: `-s` folds the post-action look into the action verb, halving the commands an act-then-observe cycle costs |
