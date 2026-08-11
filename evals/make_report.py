@@ -222,13 +222,15 @@ def verbs_section():
            "| verb | calls | share |", "|---|---:|---:|"]
     for verb, c in n.most_common():
         out.append(f"| `hd {verb}` | {c:,} | {c / tot:.0%} |")
-    plain, after = interleavings(cmds)
+    plain, unprinted, printed = interleavings(cmds)
     if plain:
-        out += ["", f"Of the {plain:,} plain `hd see` re-observations, {after:,} "
-                    f"({after / plain:.0%}) directly followed a `--find`/`--full`/`-q`. Those "
-                    "render the full tree, so a baseline keyed off the verb leaves a compact "
-                    "`see` nothing of its own kind to diff against and it prints the whole tree "
-                    "— silently, without even the \"screen changed too much\" line."]
+        out += ["", f"Of the {plain:,} plain `hd see` re-observations, {unprinted:,} "
+                    f"({unprinted / plain:.0%}) directly followed a `--find` or `-q` and "
+                    f"{printed:,} a `--full`. `--find` and `-q` render the whole tree but print "
+                    "only the matches (or nothing), so recording their tree as the diff "
+                    "baseline makes that next `see` compare the screen against a tree the agent "
+                    "never read, and answer `# no change since the last see` about a screen it "
+                    "has not been shown. See `evals/test_seen_baseline.py`."]
     return "\n".join(out)
 
 
@@ -240,12 +242,13 @@ def rendering(flags):
 
 
 def interleavings(cmds):
-    """(plain compact re-observations, how many of them followed a full-tree render).
+    """(plain compact re-observations, how many followed an unprinted render, how many a `--full`).
 
-    The pairing an agent actually types is `tap; see --find PAT` then a plain `see`, and that
-    second observation is the one that should have been a delta.
+    The pairing an agent actually types is `tap; see --find PAT` then a plain `see`. Whether the
+    interleaved render was PRINTED is what matters: after a `--full` the agent holds that tree and
+    a delta against it is honest, after a `--find`/`-q` it does not.
     """
-    plain = after = 0
+    plain = unprinted = printed = 0
     for k, cs in cmds.items():
         if k.split("|")[1] != "hybrid":
             continue
@@ -254,8 +257,9 @@ def interleavings(cmds):
             if cur != "compact":
                 continue
             plain += 1
-            after += prev is not None and prev != "compact"
-    return plain, after
+            unprinted += prev == "full (find)"
+            printed += prev == "full"
+    return plain, unprinted, printed
 
 
 ACTION = re.compile(r"\bhd\s+(?:tap|tap-xy|swipe|swipe-xy|type|key|longpress)\b|"
@@ -385,6 +389,18 @@ def acli_section():
     return "\n".join(out)
 
 
+def capture_rates():
+    """Share of each arm's exec calls that produced a `shell_process_started` event."""
+    out = []
+    for a in ARMS:
+        rs = [r for r in A[a] if r.get("captured_commands") and r.get("exec_calls")]
+        if rs:
+            out.append(f"{s.mean([r['captured_commands'] / r['exec_calls'] for r in rs]):.0%} {a}")
+    return ", ".join(out) or "an unmeasured share of"
+
+
+capture = capture_rates()
+
 print(f"""# {' vs. '.join(TITLE.get(a, a) for a in ARMS)} — {len(rows)}-run blinded eval
 
 **Matrix.** {len(apps)} apps x {len(ARMS)} arms x {reps} replicates = {len(rows)} child sessions,
@@ -447,5 +463,9 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
   flatter whichever arm is cheaper.
 - Some suites cap below 30/30 in EVERY arm because the remaining tasks need an account or a
   network service (Jerboa needs a Lemmy login). That is the suite's ceiling, not an arm failing.
+- Command-derived sections (verbs, adoption, looks/task) read `shell_process_started` events,
+  which cover {capture} of each arm's `exec` calls: a command run inside a shell script or a
+  loop the agent wrote is one event, so counts are a floor, and they are a lower floor for the
+  arm that wrapped its tool.
 - Raw data: `runs.json` (cell -> session), `metrics.json`, `tasks.json`, `bypass.json`.
 """)

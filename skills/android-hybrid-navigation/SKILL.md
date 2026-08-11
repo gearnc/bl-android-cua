@@ -69,7 +69,9 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    - **You know what you're checking** → `hd see --find PAT`, or `hd see -q` once and then a
      `hd find PAT` per thing you want to confirm.
    - **Otherwise just run `hd see`.** A re-`see` of a screen you already observed prints only
-     the nodes that appeared or disappeared since your last `see` of the same kind, with
+     the nodes that appeared or disappeared since the last tree it actually printed to you
+     (a `--find` or `-q` in between changes nothing: you were never shown their tree, so it is
+     not what the delta is against), with
      current indexes, so `hd tap` works straight off it. Measured over 24 post-action
      observations across 8 apps this cuts the observation by 69% on average, 96–97% when a tap
      only changed a toolbar or a row's state. When the screen turns over entirely, or the last

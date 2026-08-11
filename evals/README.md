@@ -81,6 +81,16 @@ spare read correctly — i.e. it biases the comparison, it does not just add noi
 same cursor. Cross-check before trusting a collection: the last growth event's `iteration_count`
 should be within a few turns of the last `iteration_stats` event's `iteration`.
 
+**`action=details` needs `max_content_length` and one event id at a time.** It has a *second*,
+independent clipping: each content field is cut at ~2k chars with no truncation notice and no
+overflow file, an in-place `... [truncated, N total chars]`. `current_context_tokens` is at the
+tail of a `context_growth_update`, so the clip silently drops it — and it drops it on exactly the
+cells with the largest `tool_aggregates`, i.e. the busiest runs. Pass
+`max_content_length=100000` (the API's maximum; larger is a 422) and ask for a single event per
+call: a multi-event page overflows the *tool's* output cap instead and is cut mid-JSON. Parse the
+`contents:` block by matching braces rather than anchoring on the end of the response, so a
+clipped body raises instead of being skipped (`evals/data/collect_run.py`).
+
 Then:
 
 ```bash
