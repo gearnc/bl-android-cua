@@ -48,8 +48,9 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    things to check on one screen, split capture from retrieval: `hd see -q` caches the full tree
    and prints one line, then each `hd find PAT` greps that cache with no new dump. Either way you
    pay for the matches, not the screen — 77% less printed output than reading the tree, measured
-   over 4 apps in `evals/test_capture_retrieval.py`. If `hd find` reports NO MATCH, re-observe
-   with `hd see` rather than guessing again.
+   over 4 apps in `evals/test_capture_retrieval.py`. A `hd see --find` that matches nothing
+   prints the tree itself, so a miss costs one look rather than a miss plus a re-observation;
+   `hd find` greps the cache, so its NO MATCH still means re-observe with `hd see`.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
    `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
    **When the action needs a look after it, add `-s` instead of running one.** Every action verb

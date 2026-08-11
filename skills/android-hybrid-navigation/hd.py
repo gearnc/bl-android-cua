@@ -319,7 +319,25 @@ def see(full=False, find=None, diff=True, quiet=False):
         pat = re.compile(find, re.I)
         hits = [ln for ln in lines if pat.search(ln)]  # matches labels/ids/class/near-hints/checked= state
         print(f"# screen {size[0]}x{size[1]}, {len(hits)}/{len(shown)} nodes match {find!r} (profile={profile})")
-        print("\n".join(hits) if hits else "# NO MATCH — re-run without --find (or --full) before concluding it's absent")
+        if hits:
+            print("\n".join(hits))
+            return
+        # A miss tells the caller nothing about the screen, so it used to end with "re-run
+        # without --find" — an instruction that costs a whole extra turn to obey, and one the
+        # caller obeyed 40 times over the 12 hybrid runs of the 2026-08-11 matrix. Print the
+        # tree it was about to ask for instead, exactly as the <5-node case already escalates.
+        miss, miss_lines = render(nodes, False, profile)
+        escalated = len(miss) < COMPACT_MIN_NODES
+        if escalated:
+            miss, miss_lines = shown, lines
+        kind_shown = "full" if escalated else "compact"
+        print(f"# NO MATCH — showing the {kind_shown} tree ({len(miss)} nodes) "
+              "so this costs one look, not two")
+        print("\n".join(miss_lines))
+        # It was printed, so it is a baseline the next `see` may honestly diff against.
+        st_out = json.load(open(STATE)) if os.path.exists(STATE) else {}
+        st_out["baselines"] = {**baselines, kind_shown: {"lines": miss_lines, "ts": now}}
+        json.dump(st_out, open(STATE, "w"))
         return
     print(f"# screen {size[0]}x{size[1]}, {len(shown)} nodes ({'full' if full else 'compact'}, profile={profile} {src})")
     if profile == "views" and not full and len(shown) > 25:

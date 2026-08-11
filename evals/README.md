@@ -55,6 +55,12 @@ async def main():
 asyncio.run(main())
 ```
 
+At 36 cells the create response itself overflows the tool output cap and only the first ~30 ids
+are parseable, so expect that assert to fire — it is doing its job, not reporting a failed launch.
+The sessions exist. Recover them by tag instead of relaunching (which would double-spend the
+matrix): `devin_session_search tags=["android-cua-eval"] first=100`, match each result's title
+back to its `app|arm|rep`, and refuse to write `runs.json` until all cells are present.
+
 Poll with `devin_session_interact action=get` and `gather.status`. Children park in
 `waiting_for_user` when done, which still holds a concurrency slot — put them to sleep
 (`action=sleep`) if you are running a matrix large enough to hit the cap.
@@ -160,3 +166,4 @@ Checks that decide whether the numbers mean what they appear to:
 | `test_acli.py` | smoke test + bench: `accessibility-cli` observation cost vs `hd see`, per app |
 | `test_acli_gaps.py` | bench: what an `accessibility-cli` look *answers* (nodes, coordinates, labels, state) vs `hd see`, and whether its selector actions hit |
 | `test_act_see.py` | bench + regression: `-s` folds the post-action look into the action verb, halving the commands an act-then-observe cycle costs |
+| `test_find_nomatch.py` | bench + regression: a `--find` miss prints the tree instead of asking for another look — commands *and* chars, since escalating must not print the tree twice |
