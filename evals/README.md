@@ -165,5 +165,5 @@ Checks that decide whether the numbers mean what they appear to:
 | `test_dumps.py` | checks every suite's verification dump runs clean |
 | `test_acli.py` | smoke test + bench: `accessibility-cli` observation cost vs `hd see`, per app |
 | `test_acli_gaps.py` | bench: what an `accessibility-cli` look *answers* (nodes, coordinates, labels, state) vs `hd see`, and whether its selector actions hit |
-| `test_act_see.py` | bench + regression: `-s` folds the post-action look into the action verb, halving the commands an act-then-observe cycle costs |
+| `test_act_see.py` | bench + regression: an action observes after itself by default (halving an act-then-observe cycle) and `-n` collapses an N-action batch to one look |
 | `test_find_nomatch.py` | bench + regression: a `--find` miss prints the tree instead of asking for another look — commands *and* chars, since escalating must not print the tree twice |

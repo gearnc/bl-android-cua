@@ -32,13 +32,15 @@ def loop(pkg, n_actions=4):
     tree = hd("see")
     rows = []
     for idx in clickables(tree)[2:2 + n_actions]:
-        subprocess.run(HD + ["tap", str(idx)], capture_output=True, env=ENV)
+        # `-n`: the cost under test is the SEPARATE observation, so the action must not fold
+        # one in (which would also move the baseline it is measured against).
+        subprocess.run(HD + ["tap", str(idx), "-n"], capture_output=True, env=ENV)
         time.sleep(2)
         default = hd("see")               # what the agent types
         before = hd("see", "--no-diff")   # what it used to get
         rows.append((f"tap {idx}", len(before), len(default),
                      "too much to diff" in default))
-        subprocess.run(HD + ["key", "back"], capture_output=True, env=ENV)
+        subprocess.run(HD + ["key", "back", "-n"], capture_output=True, env=ENV)
         time.sleep(1.5)
         hd("see")
     return rows

@@ -74,6 +74,9 @@ def loop(hd_py, pkg, targets):
     The last `see` asks "what am I looking at now?" about a screen the caller has not been shown:
     the tap changed it and `--find` printed only its matches. Returns one row per re-observation:
     (label, chars printed, nodes of the current screen never shown to the caller).
+
+    An action verb observes after itself unless told not to, so whatever the tap prints counts as
+    shown — the question this bench asks is what reached the caller, by whichever command.
     """
     rows = []
     for idx in targets:
@@ -83,13 +86,13 @@ def loop(hd_py, pkg, targets):
         # Start each row from a tree the caller demonstrably holds, so "never shown" below is
         # about the interleaving under test and not about where the previous row left off.
         first = run(hd_py, "see", "--no-diff")
-        run(hd_py, "tap", str(idx))
+        acted = run(hd_py, "tap", str(idx))
         time.sleep(2)
         run(hd_py, "see", "--find", "Button|Text|View|Menu")   # the interleaved verb under test
         out = run(hd_py, "see")                                # "what am I looking at now?"
-        seen = nodes_in(first) | nodes_in(out)
+        seen = nodes_in(first) | nodes_in(acted) | nodes_in(out)
         rows.append((f"tap {idx}", len(out), len(truth(hd_py) - seen)))
-        run(hd_py, "key", "back")                              # back to the row's start screen
+        run(hd_py, "key", "back", "-n")                        # back to the row's start screen
         time.sleep(2)
     return rows
 

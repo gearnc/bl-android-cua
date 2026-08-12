@@ -1,13 +1,17 @@
-"""Bench + regression: `-s` folds the post-action look into the action, saving a turn.
+"""Bench + regression: an action observes after itself, and a batch pays for one look.
 
-ACU is inference, so it is charged per model TURN, not per printed token. The 2026-08-10 A/B/C
-measured the skill at 0.74x the perception tokens of an agent with no tooling and still 1.13x
-its ACU, because it looked 4.14 times per task against 2.68: 96% of `hd tap`s were followed by
-an observation and 32 of those per run were a separate command, i.e. a separate turn.
+ACU is inference, so it is charged per model TURN, not per printed token. The 2026-08-11 A/B/C
+measured the skill at 0.67x the perception tokens of an agent with no tooling and still 1.10x
+its ACU, because it looked 3.26 times per task against 1.96 — the unaided agent chained 8.74
+actions per look, the skill 2.02. `-s` had shipped as the fix for exactly that and was typed on
+312 of 1,569 actions (20%), so the fold is now the DEFAULT and `-n` opts out.
 
-`hd tap 5 -s` does the tap, waits for the screen to settle and prints exactly what the following
-`hd see` would have printed — same bytes, one turn instead of two. This file measures both
-halves of that claim on real screens: the command count halves and the output does not grow.
+Two claims, both measured here on real screens:
+
+* an action verb with no flags does the action, settles, and prints what the following `hd see`
+  would have — one command instead of two, and not materially more output;
+* a batch of N actions with `-n` on all but the last costs one command and one tree, against N
+  commands and N trees if every action looks.
 
     python3 evals/test_act_see.py [app ...]
 """
@@ -28,18 +32,22 @@ def run(hd_py, *args):
 
 
 def split_loop(hd_py, pkg, targets):
-    """act, then look, as two commands — what the skill's core loop asks for today."""
+    """act, then look, as two commands — the loop an agent types when the action does not look.
+
+    `-n` here is not the flag under test, it is how this arm reproduces the old behaviour: the
+    action prints its echo line and nothing else, and the observation is a second command.
+    """
     launch(pkg)
     rows = []
     for idx in targets:
         run(hd_py, "see")
-        act = run(hd_py, "tap", str(idx))
+        act = run(hd_py, "tap", str(idx), "-n")
         time.sleep(2)                              # the agent's own `sleep`, then a second call
         out = run(hd_py, "see")
         # Both arms are charged the action's own echo line, so the byte comparison is like
         # for like and the only difference left is the number of commands.
         rows.append((f"tap {idx}", 2, len(act) + len(out), "diff vs last see" in out))
-        act = run(hd_py, "key", "back")
+        act = run(hd_py, "key", "back", "-n")
         time.sleep(2)
         out = run(hd_py, "see")                    # back to a screen seen seconds ago: a delta
         rows.append((f"back from {idx}", 2, len(act) + len(out), "diff vs last see" in out))
@@ -47,32 +55,60 @@ def split_loop(hd_py, pkg, targets):
 
 
 def folded_loop(hd_py, pkg, targets):
-    """act and look in one command, with `-s` doing the settling."""
+    """act and look in one command — the default, no flag typed."""
     launch(pkg)
     rows = []
     for idx in targets:
         run(hd_py, "see")
-        out = run(hd_py, "tap", str(idx), "-s")
+        out = run(hd_py, "tap", str(idx))
         rows.append((f"tap {idx}", 1, len(out), "diff vs last see" in out))
-        out = run(hd_py, "key", "back", "-s")
+        out = run(hd_py, "key", "back")
         rows.append((f"back from {idx}", 1, len(out), "diff vs last see" in out))
     return rows
 
 
-def test_actions_take_see():
-    """Every action verb must accept `-s`, or the loop the skill prescribes cannot be typed."""
+def batch(hd_py, pkg, targets, quiet):
+    """(commands, chars) for N actions in a row: every one looking, or only the last.
+
+    The actions are `key back`, which no screen can invalidate, so the two variants do the same
+    work and differ only in how many trees they print.
+    """
+    launch(pkg)
+    run(hd_py, "see")
+    chars = 0
+    for i in range(len(targets)):
+        last = i == len(targets) - 1
+        chars += len(run(hd_py, "key", "back", *([] if last or not quiet else ["-n"])))
+    # An agent chains a batch into ONE shell command; the split variant cannot, because it
+    # reads each tree before choosing the next action.
+    return (1 if quiet else len(targets)), chars
+
+
+def test_actions_observe_by_default():
+    """Every action verb folds its look unless `-n` is typed — the whole point of the default."""
     src = Path(find_hd()).read_text()
     assert "def see_flag" in src, "the act-then-observe flag is gone"
     for verb in ("tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe"):
         assert f'"{verb}"' in src.split("ACTIONS = {")[1].split("}")[0], \
             f"{verb} no longer folds its observation"
+    body = src.split("def see_flag")[1].split("\ndef ")[0]
+    assert '"-n" in a or "--no-see" in a' in body, "there is no way to opt out of the look"
+    assert body.rstrip().endswith("return True, None, False"), "the look is not the default"
+
+
+def test_type_can_type_a_flag():
+    """`hd type "-n"` must type `-n`, not read it as the opt-out."""
+    src = Path(find_hd()).read_text()
+    assert '{"type": 2, "tap-xy": 3, "longpress-xy": 3}' in src, \
+        "flags are read over the verbs' own operands again"
 
 
 if __name__ == "__main__":
     from suites import APPS  # noqa: E402
 
-    test_actions_take_see()
-    print("regression: every action verb takes -s  OK\n")
+    test_actions_observe_by_default()
+    test_type_can_type_a_flag()
+    print("regression: every action verb observes by default, `-n` opts out  OK\n")
 
     hd = find_hd()
     which = sys.argv[1:] or ["markor", "amaze", "seal", "unitto"]
@@ -106,3 +142,24 @@ if __name__ == "__main__":
               f"{chars_fold / chars_split:.2f}x the output, {deltas}/{n} still deltas")
         assert cmds_fold < cmds_split, "folding did not save a command"
         assert chars_fold <= chars_split * 1.1, "folding printed materially more than two calls"
+
+    print()
+    b_cmds = b_chars = q_cmds = q_chars = 0
+    for key in which:
+        pkg = APPS[key]["pkg"]
+        try:
+            steps = ["back"] * 4
+            c1, n1 = batch(hd, pkg, steps, quiet=False)
+            c2, n2 = batch(hd, pkg, steps, quiet=True)
+        except Exception as e:                                   # noqa: BLE001
+            print(f"{key}: FAILED {e}")
+            continue
+        b_cmds, b_chars = b_cmds + c1, b_chars + n1
+        q_cmds, q_chars = q_cmds + c2, q_chars + n2
+        print(f"{key:<10}batch of {len(steps)}: every action looks = {c1} commands, {n1:>5} chars"
+              f"   `-n` on all but the last = {c2} command, {n2:>5} chars")
+    if b_cmds:
+        print(f"\nTOTAL batches: {q_cmds} commands and {q_chars} chars against {b_cmds} and "
+              f"{b_chars} — {1 - q_cmds / b_cmds:.0%} fewer turns, "
+              f"{1 - q_chars / b_chars:.0%} less output")
+        assert q_chars < b_chars, "`-n` did not suppress the intermediate looks"

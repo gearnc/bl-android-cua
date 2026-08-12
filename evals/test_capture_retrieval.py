@@ -74,7 +74,8 @@ def loop_cost(app, pkg, n=3):
     for _ in range(n):
         old += len(hd("see", "--no-diff")) + len(hd("see", "--find", pat))
         new += len(hd("see", "-q")) + len(hd("find", pat))
-        subprocess.run(HD + ["key", "back"], capture_output=True, env=ENV)
+        # `-n`: only the observation verbs are being priced here.
+        subprocess.run(HD + ["key", "back", "-n"], capture_output=True, env=ENV)
         time.sleep(1)
     return old, new
 

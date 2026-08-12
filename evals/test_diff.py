@@ -43,7 +43,9 @@ def measure(pkg, n_actions=4):
     tree = hd("see")
     rows = []
     for i, idx in enumerate(clickables(tree)[2:2 + n_actions]):
-        subprocess.run(HD + ["tap", str(idx)], capture_output=True, text=True, env=ENV)
+        # `-n`: this bench measures what the FOLLOWING `see` costs, so the action must not
+        # observe (and must not move the diff baseline) on its way past.
+        subprocess.run(HD + ["tap", str(idx), "-n"], capture_output=True, text=True, env=ENV)
         time.sleep(2)
         # Order matters: the diff has to run against the PRE-action tree, so it must come
         # first. Taking the full tree first refreshes the state file and makes every diff read
@@ -52,7 +54,7 @@ def measure(pkg, n_actions=4):
         full = hd("see", "--no-diff")
         changed = "too much to diff" in d
         rows.append((f"tap {idx}", len(full), len(d), changed))
-        subprocess.run(HD + ["key", "back"], capture_output=True, env=ENV)
+        subprocess.run(HD + ["key", "back", "-n"], capture_output=True, env=ENV)
         time.sleep(1.5)
         hd("see")
     return rows
