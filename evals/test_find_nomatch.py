@@ -15,7 +15,9 @@ bench prices both halves of that trade, per app:
 
 A miss now costs more characters in exchange for a whole turn, so the bench asserts the character
 cost stays within what the follow-up `see` would itself have printed — i.e. the fix must not
-print the tree twice.
+print the tree twice. The few percent of slack is the escalated tree's own indexes: they address
+the full rendering a `--find` matched against, so they run into two digits where a compact
+re-render would have counted 0..4 — and a re-render's indexes tap the wrong node.
 
     python3 evals/test_find_nomatch.py [app ...]
 
@@ -52,21 +54,48 @@ def test_miss_prints_the_tree():
     src = Path(find_hd()).read_text()
     assert "re-run without --find" not in src, "a `--find` miss still asks for another look"
     assert "so this costs one look, not two" in src, "the miss no longer escalates to the tree"
+    assert "re-observe before concluding" not in src, "a cached `hd find` miss still asks too"
+
+
+def node_lines(out):
+    return [ln.strip() for ln in out.splitlines() if ln.strip().startswith("[")]
+
+
+def test_escalated_indexes_are_tappable(hd_py):
+    """Every line an escalation prints must be a line of the tree `hd tap` indexes against.
+
+    Both misses match against the FULL rendering, so escalating to a compact RE-render hands the
+    caller indexes counted 0..n over a different node set: `hd tap 4` off such a tree tapped a
+    FrameLayout at the screen's centre instead of the ImageButton printed beside the 4. A subset
+    of the cached lines cannot drift that way, and this is the cheapest way to state it.
+    """
+    # `--no-diff`: the reference has to be the whole tree `hd tap` indexes against, and a
+    # re-observation of a screen already shown prints only its delta.
+    cached = node_lines(run(hd_py, "see", "--full", "--no-diff"))
+    for verb in (("see", "--find", MISS), ("find", MISS)):
+        printed = node_lines(run(hd_py, *verb))
+        assert printed, f"`hd {' '.join(verb)}` printed no tree on a miss"
+        stray = [ln for ln in printed if ln not in cached]
+        assert not stray, (f"`hd {' '.join(verb)}` printed indexes that address nothing "
+                           f"`hd tap` knows about: {stray[:2]}")
 
 
 if __name__ == "__main__":
     test_miss_prints_the_tree()
-    print("regression: a `--find` miss prints the tree instead of asking for it  OK\n")
+    print("regression: a `--find` miss prints the tree instead of asking for it  OK")
 
     if not shutil.which("adb") and not Path(ADB).exists():
         sys.exit("adb not found — start the emulator first")
     subprocess.run([ADB, "root"], capture_output=True, env=ENV)
     fixed, old = find_hd(), old_revision()
     which = sys.argv[1:] or list(DEFAULT_APPS)
+    from suites import APPS  # noqa: E402
+    launch(APPS[which[0]]["pkg"])
+    test_escalated_indexes_are_tappable(fixed)
+    print("regression: an escalated tree's indexes address the cached tree  OK\n")
     print(f"{'app':<12}{'cmds':>6}{'chars':>8}   {'old cmds':>9}{'old chars':>10}")
     tot = [0, 0, 0, 0]
     for key in which:
-        from suites import APPS  # noqa: E402
         try:
             launch(APPS[key]["pkg"])
             c_new, n_new = one_look(fixed)
@@ -81,4 +110,4 @@ if __name__ == "__main__":
         print(f"\nTOTAL over {len(which)} apps: {tot[0]} commands / {tot[1]:,} chars, "
               f"previously {tot[2]} commands / {tot[3]:,} chars")
         assert tot[0] <= tot[2], "the fix costs more commands than it saves"
-        assert tot[1] <= tot[3], "the fix printed the tree twice"
+        assert tot[1] <= tot[3] * 1.15, "the fix printed the tree twice"

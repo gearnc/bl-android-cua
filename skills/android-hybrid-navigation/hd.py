@@ -30,7 +30,9 @@ Verbs:
   hd see -q                       observe WITHOUT printing the tree: one header line, the tree
                                   cached on disk. Pair with `hd find`.
   hd find PAT                     grep the cached tree — no adb round-trip, only the matching
-                                  lines enter the context. Re-observes if the cache is stale.
+                                  lines enter the context. Re-observes if the cache is stale,
+                                  and on a miss prints the cached tree rather than asking you
+                                  to fetch it, so a miss still costs one look.
                                   `hd see -q; hd find Save` is the cheapest observe-and-locate.
   EVERY action verb OBSERVES AFTER ACTING, by default: it waits for the screen to settle and
                          then prints exactly what the following `hd see` would have — one command
@@ -253,6 +255,35 @@ def diff_lines(old, new):
     return added, removed
 
 
+def informative_mask(shown):
+    """Which lines of a FULL rendering a compact one would have kept, positionally."""
+    return [is_informative(n) for n in shown]
+
+
+def print_short(lines, mask, why):
+    """Print a full rendering trimmed to its informative lines, keeping their indexes.
+
+    Both misses — `hd see --find PAT` and `hd find PAT` — answer with the tree the caller was
+    otherwise going to spend a turn asking for. Both render FULL, because a pattern has to be
+    matched against every node, so the short form has to be a SUBSET of that rendering: a
+    compact re-render numbers from zero over a different node set, and `hd tap` resolves the
+    index against the cached full one. `hd tap 4` off such a tree tapped a FrameLayout at the
+    screen's centre instead of the ImageButton printed beside the 4.
+
+    No baseline is recorded: what is printed is neither of the two renderings `see` diffs
+    against, so leaving the baseline alone only makes the next `see` print more — never claim
+    "no change" about a screen the caller has not read.
+    """
+    short = [ln for ln, keep in zip(lines, mask) if keep]
+    escalated = len(short) < COMPACT_MIN_NODES        # the same floor a compact `see` escalates on
+    if escalated:
+        short = list(lines)
+    print(f"# {why} — showing the {'full' if escalated else 'compact'} tree "
+          f"({len(short)} of {len(lines)} nodes, indexes are `hd tap`-able) "
+          "so this costs one look, not two")
+    print("\n".join(short))
+
+
 def see(full=False, find=None, diff=True, quiet=False):
     nodes, size = parse(dump_xml())
     profile, src = detect_profile(nodes)
@@ -293,7 +324,13 @@ def see(full=False, find=None, diff=True, quiet=False):
             # costs nothing to remember: no extra dump, one format pass over parsed nodes.
             baselines["compact"] = {"lines": render(nodes, False, profile)[1], "ts": now}
     json.dump({"nodes": shown, "ts": now, "lines": lines, "mode": mode,
-               "size": list(size), "profile": profile, "baselines": baselines}, open(STATE, "w"))
+               "size": list(size), "profile": profile, "baselines": baselines,
+               # Which of the cached lines a compact view would have kept, so `hd find` can
+               # answer a miss with a short tree. Stored as a mask over `lines` rather than a
+               # second rendering because a compact render re-numbers from zero, and every
+               # index printed has to address `nodes` — an index that taps a different node
+               # than the one beside it is worse than an expensive look.
+               "informative": informative_mask(shown)}, open(STATE, "w"))
     if quiet:
         # Capture without printing: the tree is on disk, and `hd find PAT` reads it from there.
         # Costs one line of context instead of the whole screen, for the common case where you
@@ -330,18 +367,10 @@ def see(full=False, find=None, diff=True, quiet=False):
         # without --find" — an instruction that costs a whole extra turn to obey, and one the
         # caller obeyed 40 times over the 12 hybrid runs of the 2026-08-11 matrix. Print the
         # tree it was about to ask for instead, exactly as the <5-node case already escalates.
-        miss, miss_lines = render(nodes, False, profile)
-        escalated = len(miss) < COMPACT_MIN_NODES
-        if escalated:
-            miss, miss_lines = shown, lines
-        kind_shown = "full" if escalated else "compact"
-        print(f"# NO MATCH — showing the {kind_shown} tree ({len(miss)} nodes) "
-              "so this costs one look, not two")
-        print("\n".join(miss_lines))
-        # It was printed, so it is a baseline the next `see` may honestly diff against.
-        st_out = json.load(open(STATE)) if os.path.exists(STATE) else {}
-        st_out["baselines"] = {**baselines, kind_shown: {"lines": miss_lines, "ts": now}}
-        json.dump(st_out, open(STATE, "w"))
+        # `--find` renders FULL (indexes must address every node), so the short version is that
+        # rendering minus its uninformative lines — NOT a compact re-render, whose indexes
+        # count from zero over a different node set and would tap the wrong node.
+        print_short(lines, informative_mask(shown), "NO MATCH")
         return
     print(f"# screen {size[0]}x{size[1]}, {len(shown)} nodes ({'full' if full else 'compact'}, profile={profile} {src})")
     if profile == "views" and not full and len(shown) > 25:
@@ -369,8 +398,13 @@ def find_cached(pat):
     age = int(time.time() - st["ts"])
     print(f"# screen {w}x{h}, {len(hits)}/{len(st['lines'])} nodes match {pat!r} "
           f"(cached {age}s ago, profile={st.get('profile')})")
-    print("\n".join(hits) if hits else
-          "# NO MATCH in the cached tree — `hd see` to re-observe before concluding it's absent")
+    if hits:
+        print("\n".join(hits))
+        return
+    # A miss used to end by asking for a re-observation before concluding the node absent: a turn
+    # spent fetching a tree this verb is already holding (the cache is inside DIFF_MAX_AGE by
+    # the branch above), which is what `hd see --find` stopped doing in #11.
+    print_short(st["lines"], st.get("informative") or [], f"NO MATCH in the cache ({age}s old)")
 
 def tap(index, long=False):
     st = load_state()

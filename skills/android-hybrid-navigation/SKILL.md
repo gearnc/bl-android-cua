@@ -48,9 +48,9 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    things to check on one screen, split capture from retrieval: `hd see -q` caches the full tree
    and prints one line, then each `hd find PAT` greps that cache with no new dump. Either way you
    pay for the matches, not the screen — 77% less printed output than reading the tree, measured
-   over 4 apps in `evals/test_capture_retrieval.py`. A `hd see --find` that matches nothing
-   prints the tree itself, so a miss costs one look rather than a miss plus a re-observation;
-   `hd find` greps the cache, so its NO MATCH still means re-observe with `hd see`.
+   over 4 apps in `evals/test_capture_retrieval.py`. Neither verb makes you pay twice for a
+   miss: `hd see --find` and `hd find` both print the tree they matched against when the
+   pattern hits nothing, with the indexes `hd tap` expects, so a miss costs one look.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
    `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
    **Every action observes after itself — you never run a `see` to find out what an action did.**
@@ -130,8 +130,9 @@ profile=rn       hd see --find <target>     labels usually hit; --find also matc
                                             boxes). Re-tap by coords if a tap no-ops.
 ```
 
-Escalation (any profile): --find NO MATCH is not proof of absence → plain `hd see` →
-`hd see --full` (every node; auto-triggered when compact yields <5) → `hd shot x.png` + view.
+Escalation (any profile): a NO MATCH is not proof of absence, and it hands you the tree so you
+can see for yourself → `hd see --full` (every node; auto-triggered when compact yields <5) →
+`hd shot x.png` + view.
 Screenshots are required only for: theme/color verification, unlabeled icon disambiguation,
 canvas/WebView pixels, or when `uiautomator dump` keeps failing on animated screens.
 
