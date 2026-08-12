@@ -38,7 +38,7 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
 `am start -a android.intent.action.SENDTO -d sms:<number>`,
 `am start -n <pkg>/<activity>` or `monkey -p <pkg> 1` to launch apps. Then `hd see` from there.
 
-## Core loop (repeat per action)
+## Core loop (once per TASK, not once per action)
 1. `hd see` — read the indexed node list. Nodes show class, label, #resource-id,
    checked/selected state, `<C>`lickable/`<S>`crollable/`<E>`dit flags, and center coords.
    When you already know what you're after, use `hd see --find <regex>` instead — it prints
@@ -53,20 +53,30 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    `hd find` greps the cache, so its NO MATCH still means re-observe with `hd see`.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
    `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
-   **When the action needs a look after it, add `-s` instead of running one.** Every action verb
-   takes `-s [PAT]`: it does the action, waits for the screen to settle, then prints exactly what
-   the next `hd see` (or `hd see --find PAT`) would have printed. `hd tap 5 -s` is one command
-   where `hd tap 5` + `sleep 2` + `hd see` is two, for the same bytes — and you are billed per
-   command, not per byte. Wherever this skill says "re-`see`", "verify" or "confirm" after an
-   action, that means `-s` on the action, not a second command.
+   **Every action observes after itself — you never run a `see` to find out what an action did.**
+   The verb waits for the screen to settle and prints what the next `hd see` would have; `-s PAT`
+   narrows that to what `hd see --find PAT` would. Wherever this skill says "re-`see`", "verify"
+   or "confirm" after an action, it means that built-in look, never a second command.
+   **Chain the actions you already have indexes for and let only the LAST one look**, with `-n`
+   on the others:
+
+   ```
+   hd tap 5 -n; hd type "Groceries" -n; hd tap 12          # one turn, one tree at the end
+   ```
+
+   You are billed per command, not per byte: one 8-action command that looks once is a fraction
+   of the cost of 8 that look 8 times. In the 2026-08-11 A/B/C the skill printed 0.67x the
+   perception tokens of an unaided agent and still cost 1.10x its ACU, purely because it looked
+   3.26 times per task against that agent's 1.96 — the unaided agent chained 8.74 actions per
+   look. Measured across those 24 cells, one extra look per task costs 0.078 ACU per task.
    **Per-item actions (rename/delete/copy/move on a list item, file, feed, note): long-press
    the item FIRST** — Android puts these in a context menu or selection-mode toolbar opened by
    long-press. Do not hunt for an edit button or overflow menu until a long-press has failed.
-   Long-press with `-s` (`hd longpress 7 -s`) — look for a selection toolbar (often icon-only;
+   Its own look shows you the result — look for a selection toolbar (often icon-only;
    the three-dot "More options" node reveals labeled Rename/Copy entries).
-3. Re-observe when the screen may have changed shape — but NOT reflexively, and not as its own
-   command when `-s` on the action would have done it. Pick the cheapest observation that
-   answers your actual question:
+3. A STANDALONE `hd see` is for a screen no action of yours just produced — arriving somewhere,
+   or checking an end state. After your own action, the look is already in the command. When you
+   do need one, pick the cheapest observation that answers your actual question:
    - **You know what you're checking** → `hd see --find PAT`, or `hd see -q` once and then a
      `hd find PAT` per thing you want to confirm.
    - **Otherwise just run `hd see`.** A re-`see` of a screen you already observed prints only
@@ -79,23 +89,21 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
      `see` is more than 120s old, you get the whole tree — so it is never a trap and there is
      no flag to remember, and nothing to opt out of: a delta already carries current indexes,
      so re-reading the whole tree after a tap buys nothing you did not already have.
-   See "Earned shortcuts" below for when to skip the re-observation altogether. A standalone
-   observation is worth its own turn only when you are not acting: deciding what to do next on a
-   screen you have not seen, or checking an end state no action of yours just produced.
+   See "Earned shortcuts" below for when to skip the look altogether with `-n`.
 
 ## Earned shortcuts: don't pay for certainty you already have
 The observe→act→observe loop is the safe default, but on screens you have ALREADY observed
 and that cannot shift, skip the extra looks:
 - **Batch actions on stable layouts.** A form whose fields you've already indexed doesn't
-  need a re-`see` between filling field 1 and field 2: `hd tap 5 && hd type "x" && hd tap 7
-  && hd type "y" -s` in one step — the trailing `-s` verifies both landed without a second
-  call. Same for a known row of checkboxes, +/- steppers (`hd tap 9; hd tap 9; hd tap 9 -s`),
-  or dismissing a familiar dialog.
+  need a look between filling field 1 and field 2: `hd tap 5 -n; hd type "x" -n; hd tap 7 -n;
+  hd type "y"` in one step — the last action's own look verifies all four landed. Same for a
+  known row of checkboxes, +/- steppers (`hd tap 9 -n; hd tap 9 -n; hd tap 9`), or dismissing a
+  familiar dialog (`hd tap 3 -n`, and see it on your next action).
 - **Reuse coordinates for repeated flows.** Doing the same flow the 2nd/3rd time (add another
-  card, create another note): replay the taps with `hd tap-xy` from your notes and verify only
+  card, create another note): replay the taps with `hd tap-xy -n` from your notes and verify only
   the END state, not each step.
-- **Skip re-see after typing** when the field was focused and `hd type` echoed success — fold
-  the verification into your next action's `-s` instead of adding an observation.
+- **Skip the look after typing** when the field was focused and `hd type` echoed success —
+  `hd type "x" -n`, and let your next action's look cover it.
 - **One verification per task, not per action**, whenever a single `see --find` (or adb check
   — `ls`, `settings get`, `content query`) can prove the whole task's end state.
 Do NOT batch across layout changes: anything that opens/closes a dialog, keyboard, menu,
@@ -131,21 +139,21 @@ canvas/WebView pixels, or when `uiautomator dump` keeps failing on animated scre
 - **Views**: richest trees; permission dialogs and menus all greppable. Cheapest case.
 - **Compose** (profile=compose): switches are bare `View`s, but they carry state and the tree
   shows it as `checked=true/false` on the row — read that, never a screenshot. Some settings
-  also state themselves as text ("On"/"Use device theme"); toggle with `hd tap N -s checked`. Some
+  also state themselves as text ("On"/"Use device theme"); toggle with `hd tap N -s checked`,
+  whose look is the one line that proves it flipped. Some
   Compose checkboxes ignore `input tap` — if state didn't change after 2 attempts, verify
   another way instead of looping. Back button may CANCEL an edit screen instead of saving —
   look for an explicit OK/Save node.
 - **RN** (profile=rn): tap by index/coords only (tree-issued a11y clicks can silently no-op —
-  tap with `-s` so the confirmation costs no extra call). Checkable nodes always show `checked=true/false`
-  — trust it over a screenshot, and `--find 'checked=false'` lists the unchecked ones. Note
-  editors are often WebViews: their EditTexts usually still
-  accept `hd type` after a tap; verify with `hd type "x" -s` before reaching for a screenshot.
+  the tap's own look is your confirmation, so do NOT `-n` a tap you are unsure of). Checkable
+  nodes always show `checked=true/false` — trust it over a screenshot, and `--find 'checked=false'`
+  lists the unchecked ones. Note editors are often WebViews: their EditTexts usually still
+  accept `hd type` after a tap; read the type's own look before reaching for a screenshot.
 
 ## Typing
 `hd type` injects text below the IME — it always reaches the field even when host keystrokes
-don't. Tap the target field with `-s` to confirm focus/content in the same call, then type with
-`-s` to see the text land; retype the missing part if it didn't. Two commands for the whole
-field, not four.
+don't. `hd tap <field> -n; hd type "text"` is the whole thing in one turn: the type's own look
+shows the text landed, so retype only the missing part if it didn't.
 
 ## Verification
 Prefer machine checks over screenshots: file contents via `adb shell cat`, settings via

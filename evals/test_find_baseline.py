@@ -48,10 +48,12 @@ def loop(hd_py, pkg, pat, targets):
     rows = []
     for idx in targets:
         run(hd_py, "see")
-        run(hd_py, "tap", str(idx))
+        # `-n` throughout: what is priced here is the re-observation AFTER the interleaved
+        # `--find`, so no action may fold a look of its own into the sequence.
+        run(hd_py, "tap", str(idx), "-n")
         time.sleep(2)
         run(hd_py, "see", "--find", pat)      # the interleaved verb under test
-        run(hd_py, "key", "back")
+        run(hd_py, "key", "back", "-n")
         time.sleep(2)
         out = run(hd_py, "see")               # what it costs to re-observe after it
         rows.append((f"tap {idx}", len(out), "diff vs last see" in out))

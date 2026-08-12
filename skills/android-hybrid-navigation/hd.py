@@ -32,10 +32,13 @@ Verbs:
   hd find PAT                     grep the cached tree — no adb round-trip, only the matching
                                   lines enter the context. Re-observes if the cache is stale.
                                   `hd see -q; hd find Save` is the cheapest observe-and-locate.
-  ANY action verb takes -s/--see [PAT]: do it, wait for the screen to settle, then observe —
-                         one command instead of two, same output. `hd tap 5 -s` prints the delta
-                         the following `hd see` would have; `hd tap 5 -s Save` prints the matches
-                         `hd see --find Save` would. The look is what costs turns, not tokens.
+  EVERY action verb OBSERVES AFTER ACTING, by default: it waits for the screen to settle and
+                         then prints exactly what the following `hd see` would have — one command
+                         instead of two, same output. `hd tap 5 -s Save` narrows that look to what
+                         `hd see --find Save` would print. `hd tap 5 -n` suppresses it, which is
+                         what you want on every action of a batch except the last:
+                         `hd tap 5 -n; hd tap 9 -n; hd tap 3` is one turn and one tree.
+                         The look is what costs turns, not tokens.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap-xy <x> <y>      raw coordinate tap
   hd longpress <index>   long-press node <index> — THE way to open an item's context menu
@@ -55,6 +58,7 @@ import xml.etree.ElementTree as ET
 ADB = os.environ.get("HD_ADB", "adb")
 STATE = "/tmp/hd_last_tree.json"
 FW_CACHE = "/tmp/hd_fw_cache.json"
+HINTED = "/tmp/hd_hinted_no_see"
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
 DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
@@ -417,18 +421,38 @@ ACTIONS = {"tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe"}
 
 
 def see_flag(a):
-    """(observe after the action?, optional --find pattern) from a `-s`/`--see [PAT]`.
+    """(observe after the action?, optional --find pattern, was it asked for explicitly?).
 
-    Folding the observation into the action is the whole point: an agent that types
-    `hd tap 5` and then `hd see` pays for two turns to learn one thing, and in the 2026-08-10
-    eval 96% of taps were followed by a look, 32 of them per run as a separate command.
+    Folding the observation into the action is the whole point: an agent that types `hd tap 5`
+    and then `hd see` pays for two turns to learn one thing. `-s` shipped as opt-in and was
+    typed on 312 of 1,569 actions (20%) in the 2026-08-11 A/B/C, which is why that run still
+    spent 3.26 looks per task against an unaided agent's 1.96 and 1.10x its ACU at 0.67x its
+    perception tokens. A saving nobody types is not a saving, so the fold is the default and
+    `-n`/`--no-see` opts out — the flag a batch wants on all but its last action.
     """
+    if "-n" in a or "--no-see" in a:
+        return False, None, True
     for f in ("-s", "--see"):
         if f in a:
             i = a.index(f)
             nxt = a[i + 1] if len(a) > i + 1 else None
-            return True, (nxt if nxt and not nxt.startswith("-") else None)
-    return False, None
+            return True, (nxt if nxt and not nxt.startswith("-") else None), True
+    return True, None, False
+
+
+def hint_no_see():
+    """Name the opt-out once per session, not on every action.
+
+    An opt-out advertised nowhere is `--no-diff`: never typed. One advertised on every delta is
+    `--no-diff` after it was advertised: typed 717 times against 15 deltas actually printed.
+    Once is enough to be discoverable and costs one line a session. Kept out of STATE, which
+    `see` rewrites wholesale on every observation.
+    """
+    if os.path.exists(HINTED):
+        return
+    print("# (an action observes after itself; `-n` skips that look — use it on every action of "
+          "a batch but the last)")
+    open(HINTED, "w").close()
 
 
 def main():
@@ -436,7 +460,9 @@ def main():
     if not a:
         sys.exit(__doc__)
     cmd = a[0]
-    observe, pattern = see_flag(a[1:]) if cmd in ACTIONS else (False, None)
+    # `hd type "-n"` types a literal `-n`, so flags are read past each verb's own operands.
+    flags = a[{"type": 2, "tap-xy": 3, "longpress-xy": 3}.get(cmd, 2):]
+    observe, pattern, explicit = see_flag(flags) if cmd in ACTIONS else (False, None, True)
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
         see(full="--full" in a, find=find, diff="--no-diff" not in a,
@@ -478,6 +504,8 @@ def main():
     else:
         sys.exit(f"unknown verb {cmd!r}\n{__doc__}")
     if observe:
+        if not explicit:
+            hint_no_see()
         wait_idle(3.0)
         see(find=pattern)
 

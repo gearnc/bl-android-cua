@@ -78,7 +78,7 @@ def check(app, pkg, path):
         m = re.search(r"^\s*\[(\d+)\].*<C", out, re.M)
         if not m:
             break
-        hd("tap", m.group(1))
+        hd("tap", m.group(1), "-n")   # navigation only; the tree is read below
     nodes, lines, profile = tree_for_current_screen()
     rendered = "\n".join(lines)
     checkable = [n for n in nodes if n["checkable"] and n["checked"] in ("true", "false")]
