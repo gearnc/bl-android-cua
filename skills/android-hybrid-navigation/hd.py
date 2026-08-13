@@ -47,7 +47,12 @@ Verbs:
                          (rename/delete/copy on list items and files). Try this FIRST when a
                          per-item action has no visible button.
   hd longpress-xy <x> <y>  raw coordinate long-press
-  hd type "text"         type into the focused field
+  hd type "text"         type into the focused field (appends at the cursor)
+  hd type "text" -r      REPLACE the focused field's contents: hd reads its current length off
+                         the tree and deletes exactly that many characters before typing, so
+                         editing an existing value is one command instead of a guessed
+                         `for i in $(seq 30); do adb shell input keyevent 67; done`
+  hd clear               same deletion without typing anything
   hd key <name>          back|home|enter|tab|delete or raw keycode number
   hd swipe up|down|left|right [--steps N]
   hd shot <file.png>     screenshot to file
@@ -161,6 +166,8 @@ def parse(xml_text):
                 "text": a.get("text", ""), "desc": a.get("content-desc", ""),
                 "id": (a.get("resource-id", "") or "").split("/")[-1],
                 "clickable": a.get("clickable") == "true",
+                "focused": a.get("focused") == "true",
+                "password": a.get("password") == "true",
                 "editable": a.get("class", "").endswith("EditText") or a.get("focusable") == "true" and a.get("class", "").endswith(("EditText", "AutoCompleteTextView")),
                 "checked": a.get("checked"), "checkable": a.get("checkable") == "true",
                 "selected": a.get("selected"),
@@ -418,12 +425,19 @@ def tap(index, long=False):
     # distinguishing label/id — unlabeled nodes would fuzzy-match the wrong sibling.
     if n["text"] or n["desc"] or n["id"]:
         fresh, _ = parse(dump_xml())
-        match = next((f for f in fresh if f["class"] == n["class"] and f["text"] == n["text"]
-                      and f["desc"] == n["desc"] and f["id"] == n["id"]), None)
+        same = [f for f in fresh if f["class"] == n["class"] and f["text"] == n["text"]
+                and f["desc"] == n["desc"] and f["id"] == n["id"]]
+        # "Has a label or an id" is not the same as "is identifiable by it". A form's fields
+        # share one id and are all empty (`#text-input-outlined` x3 in LessPass), so the first
+        # match is a SIBLING, and following it tapped the row above the one the caller indexed
+        # — silently, under a message saying the node had moved. When the identity is ambiguous,
+        # the index the caller gave is the only thing that distinguishes the node, so keep the
+        # coordinates that came with it.
+        match = same[0] if len(same) == 1 else None
         if match and (abs(match["cx"] - n["cx"]) > 40 or abs(match["cy"] - n["cy"]) > 40):
             n = match
             print(f"# node moved; tapping fresh coords ({n['cx']},{n['cy']})")
-        elif match is None:
+        elif not same:
             sys.exit("node no longer on screen — re-observe with `hd see`")
     if long:
         sh("shell", "input", "swipe", str(n["cx"]), str(n["cy"]), str(n["cx"]), str(n["cy"]), "800")
@@ -432,6 +446,35 @@ def tap(index, long=False):
     print(f"{'long-pressed' if long else 'tapped'} [{index}] {n['class']} {json.dumps(n['text'] or n['desc'])} at ({n['cx']},{n['cy']})")
 
 KEYS = {"back": "4", "home": "3", "enter": "66", "tab": "61", "delete": "67", "appswitch": "187"}
+MOVE_END, DEL = "123", "67"
+CLEAR_CAP = 200  # a field whose text the tree withholds (password) still has to terminate
+
+
+def clear_focused():
+    """Empty the focused text field. Returns what was in it.
+
+    The character count comes from the tree, not from the caller: `input keyevent` has no
+    select-all that survives every IME, so a replacement is a MOVE_END plus one DEL per
+    character, and the only question is how many. Agents that had to guess got it wrong in both
+    directions — in the 2026-08-12 A/B/C the hybrid arm hand-rolled 28 backspace loops over 8 of
+    its 12 runs, 405 keyevents, re-guessing 20 -> 30 -> 40 on the same field — and each wrong
+    guess costs a turn plus the look that reveals the residue. hd already holds the field's
+    text, so it can send the exact count, in one `input keyevent` call rather than one per
+    character.
+    """
+    nodes, _ = parse(dump_xml())
+    field = next((n for n in nodes if n["focused"] and (n["editable"] or n["class"] == "EditText")), None)
+    if field is None:
+        sys.exit("no focused text field — tap the field first (`hd tap <index> -n; hd type ... -r`)")
+    old = field["text"]
+    # An empty field needs no deletion — except a password one, which some IMEs render as an
+    # empty string rather than a bullet per character; there, delete a bounded worst case rather
+    # than reporting success over text that is still in the field.
+    count = len(old) if old else CLEAR_CAP if field["password"] else 0
+    if not count:
+        return old
+    sh("shell", "input", "keyevent", MOVE_END, *([DEL] * count))
+    return old
 
 def screen_size():
     out = sh("shell", "wm", "size")
@@ -451,7 +494,7 @@ def wait_idle(timeout=5.0):
     return False
 
 
-ACTIONS = {"tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe"}
+ACTIONS = {"tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe", "clear"}
 
 
 def see_flag(a):
@@ -495,7 +538,7 @@ def main():
         sys.exit(__doc__)
     cmd = a[0]
     # `hd type "-n"` types a literal `-n`, so flags are read past each verb's own operands.
-    flags = a[{"type": 2, "tap-xy": 3, "longpress-xy": 3}.get(cmd, 2):]
+    flags = a[{"type": 2, "tap-xy": 3, "longpress-xy": 3, "clear": 1}.get(cmd, 2):]
     observe, pattern, explicit = see_flag(flags) if cmd in ACTIONS else (False, None, True)
     if cmd == "see":
         find = a[a.index("--find") + 1] if "--find" in a else None
@@ -511,7 +554,11 @@ def main():
         sh("shell", "input", "tap", a[1], a[2]); print(f"tapped ({a[1]},{a[2]})")
     elif cmd == "longpress-xy":
         sh("shell", "input", "swipe", a[1], a[2], a[1], a[2], "800"); print(f"long-pressed ({a[1]},{a[2]})")
+    elif cmd == "clear":
+        print(f"cleared {clear_focused()!r}")
     elif cmd == "type":
+        if "-r" in flags or "--replace" in flags:
+            print(f"cleared {clear_focused()!r}")
         # `adb shell` concatenates its arguments and runs them through the device shell, so the
         # text has to survive that shell: quote it, and keep %s for spaces (input text splits on
         # them). Without quoting, any of ()&;<>|'"$` aborts the command with a syntax error.

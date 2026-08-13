@@ -156,6 +156,13 @@ canvas/WebView pixels, or when `uiautomator dump` keeps failing on animated scre
 don't. `hd tap <field> -n; hd type "text"` is the whole thing in one turn: the type's own look
 shows the text landed, so retype only the missing part if it didn't.
 
+**A field that already has a value needs `-r`, not a backspace loop.** `hd type "new" -r` reads
+the focused field's current length off the tree and deletes exactly that many characters before
+typing — including a password field, whose bullets it counts. Never hand-roll
+`for i in $(seq 30); do adb shell input keyevent 67; done`: you do not know the length, and a
+wrong guess either fuses the tail of the old value onto the new one or costs another turn to
+find out. `hd clear` is the same deletion with nothing typed after it.
+
 ## Verification
 Prefer machine checks over screenshots: file contents via `adb shell cat`, settings via
 `adb shell settings get`, content providers via `adb shell content query`, and tree state via
