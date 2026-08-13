@@ -227,10 +227,56 @@ def verbs_section():
         out += ["", f"Of the {plain:,} plain `hd see` re-observations, {unprinted:,} "
                     f"({unprinted / plain:.0%}) directly followed a `--find` or `-q` and "
                     f"{printed:,} a `--full`. `--find` and `-q` render the whole tree but print "
-                    "only the matches (or nothing), so recording their tree as the diff "
-                    "baseline makes that next `see` compare the screen against a tree the agent "
-                    "never read, and answer `# no change since the last see` about a screen it "
-                    "has not been shown. See `evals/test_seen_baseline.py`."]
+                    "only the matches (or nothing), so this revision keys the diff baseline off "
+                    "the rendering the caller was SHOWN: those re-observations diff against the "
+                    "last tree that actually reached the agent rather than answering "
+                    "`# no change since the last see` about a screen it has never seen. "
+                    "`evals/test_seen_baseline.py` is the regression; re-read this share every "
+                    "run, since it decides how much that behaviour is worth."]
+    return "\n".join(out)
+
+
+# `hd type` appends, so replacing a value means deleting what is there first. An agent that has
+# no primitive for it hand-rolls MOVE_END plus a guessed number of DELs.
+DEL_KEY = r"(?:67|KEYCODE_DEL|KEYCODE_FORWARD_DEL|112)"
+CLEAR_LOOP = re.compile(
+    # a shell loop around the delete key, however the agent spelled the loop
+    rf"(?:for\s|while\s|seq\s|xargs|repeat\s).{{0,120}}?keyevent\s+{DEL_KEY}|"
+    # or the same thing unrolled: several deletes in one command
+    rf"keyevent\s+{DEL_KEY}\b(?:.{{0,60}}?keyevent\s+{DEL_KEY}\b)+|"
+    # or a jump to the end of the field before deleting, which only a clear needs
+    rf"keyevent\s+(?:123|KEYCODE_MOVE_END).{{0,120}}?keyevent\s+{DEL_KEY}", re.S)
+
+
+def field_edit_section():
+    """How often each arm had to clear a text field by hand.
+
+    Counted for all arms because the task suites are identical: the difference is whether the
+    arm's tooling offers the primitive, and how many turns the ones without it spend guessing.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    n = collections.Counter()
+    cells = collections.Counter()
+    for k, cs in cmds.items():
+        arm = k.split("|")[1]
+        hits = sum(1 for c in cs if CLEAR_LOOP.search(c))
+        n[arm] += hits
+        cells[arm] += hits > 0
+    if not sum(n.values()):
+        return ""
+    out = ["", "### Replacing a value that is already in a field", "",
+           "| | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS),
+           "| hand-rolled deletion loops |" + "".join(f" {n[a]} |" for a in ARMS),
+           "| runs doing it |" + "".join(f" {cells[a]}/{len(A[a])} |" for a in ARMS)]
+    out += ["", "Every arm meets the same fields, and none of the three tools had a verb for "
+                "emptying one, so the agents sent `KEYCODE_MOVE_END` and a guessed number of "
+                "backspaces. The count is not knowable from outside the tree \u2014 the guesses "
+                "escalate within a run (`seal|hybrid|1`: 20, 30, 10, 30, 30, 40, 20, 40, 20) "
+                "and a low one leaves the tail of the old value fused to the new text. "
+                "`hd type \"x\" -r` takes the count from the focused node's own text; "
+                "`evals/test_replace.py` prices it against the guess."]
     return "\n".join(out)
 
 
@@ -452,6 +498,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {billed_section()}
 {gap_section()}
 {verbs_section()}
+{field_edit_section()}
 {acli_section()}
 
 ## Method notes

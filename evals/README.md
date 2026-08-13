@@ -167,3 +167,5 @@ Checks that decide whether the numbers mean what they appear to:
 | `test_acli_gaps.py` | bench: what an `accessibility-cli` look *answers* (nodes, coordinates, labels, state) vs `hd see`, and whether its selector actions hit |
 | `test_act_see.py` | bench + regression: an action observes after itself by default (halving an act-then-observe cycle) and `-n` collapses an N-action batch to one look |
 | `test_find_nomatch.py` | bench + regression: a `--find` miss prints the tree instead of asking for another look — commands *and* chars, since escalating must not print the tree twice |
+| `test_tap_identity.py` | bench + regression: `hd tap N` taps node N on a form whose fields share a resource-id, instead of following an ambiguous re-match to the first of them |
+| `test_replace.py` | bench + regression: `hd type "x" -r` empties the field by the length in the tree, against the guessed backspace loop it replaces |

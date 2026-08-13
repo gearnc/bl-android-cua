@@ -99,8 +99,10 @@ def test_actions_observe_by_default():
 def test_type_can_type_a_flag():
     """`hd type "-n"` must type `-n`, not read it as the opt-out."""
     src = Path(find_hd()).read_text()
-    assert '{"type": 2, "tap-xy": 3, "longpress-xy": 3}' in src, \
-        "flags are read over the verbs' own operands again"
+    # Per-verb, so adding a verb to the table does not read as removing the guard.
+    for verb, operands in (("type", 2), ("tap-xy", 3), ("longpress-xy", 3)):
+        assert f'"{verb}": {operands}' in src, \
+            f"flags are read over {verb}'s own operands again"
 
 
 if __name__ == "__main__":

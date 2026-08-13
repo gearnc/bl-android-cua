@@ -1,0 +1,182 @@
+{
+ "lesspass|bare|2": {
+  "billed_tokens": 4793105.5,
+  "peak_context": 89259,
+  "turns": 80
+ },
+ "lesspass|bare|1": {
+  "billed_tokens": 5070460.5,
+  "peak_context": 84736,
+  "turns": 82
+ },
+ "lesspass|hybrid|2": {
+  "billed_tokens": 5948067.0,
+  "peak_context": 90658,
+  "turns": 94
+ },
+ "lesspass|hybrid|1": {
+  "billed_tokens": 3618100.0,
+  "peak_context": 76089,
+  "turns": 66
+ },
+ "joplin|bare|2": {
+  "billed_tokens": 8862914.0,
+  "peak_context": 116452,
+  "turns": 123
+ },
+ "unitto|bare|1": {
+  "billed_tokens": 9928165.0,
+  "peak_context": 99568,
+  "turns": 148
+ },
+ "unitto|hybrid|1": {
+  "billed_tokens": 8108995.5,
+  "peak_context": 118887,
+  "turns": 105
+ },
+ "lesspass|acli|2": {
+  "billed_tokens": 8983069.5,
+  "peak_context": 93890,
+  "turns": 135
+ },
+ "lesspass|acli|1": {
+  "billed_tokens": 7536931.0,
+  "peak_context": 92698,
+  "turns": 119
+ },
+ "joplin|acli|2": {
+  "billed_tokens": 14394784.0,
+  "peak_context": 121924,
+  "turns": 176
+ },
+ "joplin|acli|1": {
+  "billed_tokens": 14591873.5,
+  "peak_context": 111223,
+  "turns": 187
+ },
+ "joplin|bare|1": {
+  "billed_tokens": 11520758.0,
+  "peak_context": 116357,
+  "turns": 152
+ },
+ "joplin|hybrid|2": {
+  "billed_tokens": 12607903.5,
+  "peak_context": 135712,
+  "turns": 148
+ },
+ "joplin|hybrid|1": {
+  "billed_tokens": 10244108.0,
+  "peak_context": 117801,
+  "turns": 134
+ },
+ "unitto|acli|2": {
+  "billed_tokens": 10578153.5,
+  "peak_context": 108760,
+  "turns": 150
+ },
+ "unitto|acli|1": {
+  "billed_tokens": 12102739.5,
+  "peak_context": 128267,
+  "turns": 149
+ },
+ "unitto|bare|2": {
+  "billed_tokens": 13297872.0,
+  "peak_context": 121625,
+  "turns": 169
+ },
+ "unitto|hybrid|2": {
+  "billed_tokens": 12011095.5,
+  "peak_context": 123722,
+  "turns": 151
+ },
+ "seal|acli|2": {
+  "billed_tokens": 13334325.0,
+  "peak_context": 124809,
+  "turns": 166
+ },
+ "seal|acli|1": {
+  "billed_tokens": 12841230.5,
+  "peak_context": 109670,
+  "turns": 174
+ },
+ "seal|bare|2": {
+  "billed_tokens": 12370003.0,
+  "peak_context": 114557,
+  "turns": 164
+ },
+ "seal|bare|1": {
+  "billed_tokens": 15914187.5,
+  "peak_context": 106027,
+  "turns": 203
+ },
+ "seal|hybrid|2": {
+  "billed_tokens": 16002435.0,
+  "peak_context": 129930,
+  "turns": 191
+ },
+ "seal|hybrid|1": {
+  "billed_tokens": 16178716.5,
+  "peak_context": 130673,
+  "turns": 193
+ },
+ "amaze|bare|2": {
+  "billed_tokens": 17314151.5,
+  "peak_context": 142003,
+  "turns": 194
+ },
+ "amaze|bare|1": {
+  "billed_tokens": 21547046.0,
+  "peak_context": 152807,
+  "turns": 232
+ },
+ "amaze|hybrid|2": {
+  "billed_tokens": 16057768.0,
+  "peak_context": 135790,
+  "turns": 184
+ },
+ "amaze|hybrid|1": {
+  "billed_tokens": 21089205.0,
+  "peak_context": 148213,
+  "turns": 224
+ },
+ "markor|acli|2": {
+  "billed_tokens": 15436681.5,
+  "peak_context": 145337,
+  "turns": 194
+ },
+ "markor|bare|2": {
+  "billed_tokens": 11132363.5,
+  "peak_context": 148016,
+  "turns": 132
+ },
+ "markor|bare|1": {
+  "billed_tokens": 18368383.0,
+  "peak_context": 156531,
+  "turns": 202
+ },
+ "markor|hybrid|2": {
+  "billed_tokens": 14878648.5,
+  "peak_context": 148282,
+  "turns": 167
+ },
+ "markor|hybrid|1": {
+  "billed_tokens": 15387680.0,
+  "peak_context": 140518,
+  "turns": 186
+ },
+ "amaze|acli|2": {
+  "billed_tokens": 20575587.0,
+  "peak_context": 123675,
+  "turns": 254
+ },
+ "amaze|acli|1": {
+  "billed_tokens": 27954222.5,
+  "peak_context": 152660,
+  "turns": 301
+ },
+ "markor|acli|1": {
+  "billed_tokens": 11837117.5,
+  "peak_context": 116465,
+  "turns": 165
+ }
+}
