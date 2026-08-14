@@ -1,0 +1,326 @@
+{
+ "markor|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 15.163084400886863,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "markor|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.617190859815137,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "markor|bare|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 12.381895935457884,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "markor|bare|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 12.421622107805073,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "markor|acli|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 15.428737558642618,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "markor|acli|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 17.818219446076323,
+  "has_output": true,
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "amaze|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 21.83224134745248,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "amaze|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 17.262583548266075,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "amaze|bare|1": {
+  "state": "running",
+  "detail": "waiting_for_user",
+  "acu": 23.290757795937854,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "amaze|bare|2": {
+  "state": "running",
+  "detail": "waiting_for_user",
+  "acu": 24.580096745480326,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "amaze|acli|1": {
+  "state": "running",
+  "detail": "waiting_for_user",
+  "acu": 26.21901596398206,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "amaze|acli|2": {
+  "state": "running",
+  "detail": "waiting_for_user",
+  "acu": 19.93537989477215,
+  "has_output": true,
+  "n_done": 27,
+  "n_partial": 2,
+  "n_failed": 1
+ },
+ "seal|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 14.82602937391255,
+  "has_output": true,
+  "n_done": 24,
+  "n_partial": 4,
+  "n_failed": 2
+ },
+ "seal|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 15.830642824543403,
+  "has_output": true,
+  "n_done": 24,
+  "n_partial": 5,
+  "n_failed": 1
+ },
+ "seal|bare|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.786241904147538,
+  "has_output": true,
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "seal|bare|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 10.561377579535366,
+  "has_output": true,
+  "n_done": 26,
+  "n_partial": 4,
+  "n_failed": 0
+ },
+ "seal|acli|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 11.808383333839089,
+  "has_output": true,
+  "n_done": 26,
+  "n_partial": 3,
+  "n_failed": 1
+ },
+ "seal|acli|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 16.14590424339487,
+  "has_output": true,
+  "n_done": 26,
+  "n_partial": 4,
+  "n_failed": 0
+ },
+ "unitto|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.063789089500643,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "unitto|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 9.210418157154256,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "unitto|bare|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 10.48646432206099,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "unitto|bare|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.840911824088092,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "unitto|acli|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 9.481541518171618,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "unitto|acli|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.984884950801408,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 0,
+  "n_failed": 1
+ },
+ "joplin|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 13.053478287287906,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "joplin|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 11.85277548665522,
+  "has_output": true,
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "joplin|bare|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 12.832438646451903,
+  "has_output": true,
+  "n_done": 27,
+  "n_partial": 3,
+  "n_failed": 0
+ },
+ "joplin|bare|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 10.355938727749646,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "joplin|acli|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 14.02061215962754,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "joplin|acli|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 14.52014055771531,
+  "has_output": true,
+  "n_done": 29,
+  "n_partial": 1,
+  "n_failed": 0
+ },
+ "lesspass|hybrid|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 7.772185246366159,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 2,
+  "n_failed": 0
+ },
+ "lesspass|hybrid|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 6.8322574901694315,
+  "has_output": true,
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0
+ },
+ "lesspass|bare|1": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 6.164227024102784,
+  "has_output": true,
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0
+ },
+ "lesspass|bare|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 6.128816915694702,
+  "has_output": true,
+  "n_done": 28,
+  "n_partial": 1,
+  "n_failed": 1
+ },
+ "lesspass|acli|1": {
+  "state": "running",
+  "detail": "waiting_for_user",
+  "acu": 17.7994467939257,
+  "has_output": true,
+  "n_done": 30,
+  "n_partial": 0,
+  "n_failed": 0
+ },
+ "lesspass|acli|2": {
+  "state": "suspended",
+  "detail": "inactivity",
+  "acu": 8.57344603954726,
+  "has_output": true,
+  "n_done": 26,
+  "n_partial": 1,
+  "n_failed": 3
+ }
+}

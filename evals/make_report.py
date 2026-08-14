@@ -326,6 +326,53 @@ def field_edit_section():
     return "\n".join(out)
 
 
+FOCUS_HUNT = re.compile(
+    # grepping the tree for the field the text verbs need: `see --full | grep -i edit`
+    r"grep\s+(?:-\w+\s+)*[\"']?\w*(?:edit|focus)|"
+    # or asking for it by class
+    r"--find\s+\"?(?:EditText|.*EditText)|"
+    # or moving the cursor to the end of a field to find out whether one is focused at all
+    r"keyevent\s+(?:123|KEYCODE_MOVE_END)|"
+    r"dumpsys\s+input_method", re.I)
+
+
+def focus_hunt_section():
+    """Commands spent locating the focused field — the precondition of every text verb.
+
+    `type`, `type -r` and `clear` all act on the focused node and nothing else, so an agent that
+    cannot see which node that is has to buy the fact. Counted per arm because all three meet the
+    same fields; only the tooling differs.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    n, cells, by_stack = collections.Counter(), collections.Counter(), collections.Counter()
+    for k, cs in cmds.items():
+        app, arm = k.split("|")[0], k.split("|")[1]
+        hits = sum(1 for c in cs if FOCUS_HUNT.search(c))
+        n[arm] += hits
+        cells[arm] += hits > 0
+        if arm == "hybrid":
+            by_stack[APPS[app]["stack"]] += hits
+    if not sum(n.values()):
+        return ""
+    worst_stack = by_stack.most_common(1)
+    out = ["", "### Finding the focused field", "",
+           "| | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS),
+           "| focus-hunting commands |" + "".join(f" {n[a]} |" for a in ARMS),
+           "| runs doing it |" + "".join(f" {cells[a]}/{len(A[a])} |" for a in ARMS), "",
+           f"The hybrid arm spent {n['hybrid']} commands in {cells['hybrid']}/{len(A['hybrid'])} "
+           "runs answering a question its own tree already knew the answer to: `hd see --full | "
+           "grep -i edit`, `hd see --find EditText`, `keyevent 123`. "
+           + (f"{worst_stack[0][1]} of them are in the {worst_stack[0][0]} cells"
+              if worst_stack else "")
+           + " — the stack where hybrid's perception tokens run furthest above bare. `parse()` "
+             "already read `focused` off every node; `render()` printed every other state but "
+             "that one, so the precondition of the three text verbs was the one fact a look "
+             "could not answer."]
+    return "\n".join(out)
+
+
 def rendering(flags):
     """Which tree a `see` invocation renders: `--find` and `-q` force the full one."""
     if "--find" in flags or re.search(r"(^|\s)-q(\s|$)|--quiet", flags):
@@ -546,6 +593,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {verbs_section()}
 {diff_outcome_section()}
 {field_edit_section()}
+{focus_hunt_section()}
 {acli_section()}
 
 ## Method notes
