@@ -233,7 +233,11 @@ def render(nodes, full, profile="views"):
             parts.append(f"near:{json.dumps(n['hint'])}")
         if n["enabled"] == "false":
             parts.append("disabled")
-        flags = "".join(c for c, f in (("C", n["clickable"]), ("S", n["scrollable"]), ("E", n["class"] == "EditText")) if f)
+        # `F` is where the keystrokes go. `type`/`type -r`/`clear` all act on the focused field
+        # and nothing else, so a tree that renders every other state but that one makes the
+        # precondition of the three text verbs the one fact a look cannot answer.
+        flags = "".join(c for c, f in (("C", n["clickable"]), ("S", n["scrollable"]),
+                                       ("E", n["class"] == "EditText"), ("F", n["focused"])) if f)
         if flags:
             parts.append(f"<{flags}>")
         parts.append(f"({n['cx']},{n['cy']})")
@@ -502,6 +506,41 @@ MOVE_END, DEL = "123", "67"
 CLEAR_CAP = 200  # a field whose text the tree withholds (password) still has to terminate
 
 
+def editable_candidates():
+    """Indexes that focus a field, as the caller's LAST look numbered them.
+
+    Indexes are only valid against the tree that was printed, so this reads the cached
+    rendering rather than the dump in hand: an index off a fresh render can address a
+    different node than the one the agent is holding.
+    """
+    st = json.load(open(STATE)) if os.path.exists(STATE) else {}
+    out = []
+    for i, n in enumerate(st.get("nodes", [])):
+        if n.get("editable") or n.get("class") == "EditText":
+            label = n.get("text") or n.get("desc") or n.get("hint") or ""
+            out.append(f"[{i}] {n.get('class') or 'node'} {json.dumps(label)} "
+                       f"({n.get('cx')},{n.get('cy')})")
+    return out
+
+
+def no_focus_error():
+    """The failure message, carrying the look the caller would otherwise have to buy.
+
+    A bare "tap the field first" leaves the agent one fact short of recovering, and it bought
+    that fact with looks: over the 36-run 2026-08-14 A/B/C the hybrid arm spent 60 commands in
+    8 of its 12 runs hunting for the field (`hd see --full | grep -i edit`, `hd see --find
+    EditText`, `keyevent 123`), 49 of them in the four Compose cells — the stack where hybrid
+    cost 1.22x bare's perception tokens, and seal 1.57x.
+    """
+    cands = editable_candidates()
+    if not cands:
+        return ("no focused text field, and the last see showed no editable node — "
+                "re-observe with `hd see`")
+    return ("no focused text field — tap one of these first "
+            "(`hd tap <index> -n; hd type ... -r`), from your last see:\n"
+            + "\n".join(cands[:10]))
+
+
 def clear_focused():
     """Empty the focused text field. Returns what was in it.
 
@@ -517,7 +556,7 @@ def clear_focused():
     nodes, _ = parse(dump_xml())
     field = next((n for n in nodes if n["focused"] and (n["editable"] or n["class"] == "EditText")), None)
     if field is None:
-        sys.exit("no focused text field — tap the field first (`hd tap <index> -n; hd type ... -r`)")
+        sys.exit(no_focus_error())
     old = field["text"]
     # An empty field needs no deletion — except a password one, which some IMEs render as an
     # empty string rather than a bullet per character; there, delete a bounded worst case rather

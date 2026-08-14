@@ -40,7 +40,8 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
 
 ## Core loop (once per TASK, not once per action)
 1. `hd see` — read the indexed node list. Nodes show class, label, #resource-id,
-   checked/selected state, `<C>`lickable/`<S>`crollable/`<E>`dit flags, and center coords.
+   checked/selected state, `<C>`lickable/`<S>`crollable/`<E>`dit/`<F>`ocused flags, and center
+   coords.
    When you already know what you're after, use `hd see --find <regex>` instead — it prints
    only matching nodes (a few lines instead of the whole tree) with tappable indexes.
    **Printing a whole screen you did not need is the most expensive habit available to you.**
@@ -162,6 +163,10 @@ typing — including a password field, whose bullets it counts. Never hand-roll
 `for i in $(seq 30); do adb shell input keyevent 67; done`: you do not know the length, and a
 wrong guess either fuses the tail of the old value onto the new one or costs another turn to
 find out. `hd clear` is the same deletion with nothing typed after it.
+
+Both act on the **focused** field, which the tree marks `<F>`: if `--find EditText` shows a field
+without it, your tap did not land in it, and `hd type ... -r` will say so and list the indexes
+that do focus one — tap one of those rather than grepping the tree for the field.
 
 ## Verification
 Prefer machine checks over screenshots: file contents via `adb shell cat`, settings via
