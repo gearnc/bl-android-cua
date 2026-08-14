@@ -24,7 +24,9 @@ Verbs:
                                   the cheapest observation when you know what you're looking for
   hd see                          re-observing a screen you have already seen prints only what
                                   CHANGED since your last `see` of the same kind, with current
-                                  indexes, so `hd tap` works straight off it. The whole tree is
+                                  indexes, so `hd tap` works straight off it. A row that only
+                                  scrolled is one `~ [was]->[now] (x,y)` line, not a removal plus
+                                  an addition. The whole tree is
                                   printed automatically whenever it is cheaper than the delta or
                                   the last `see` is too old to trust — you never have to ask.
   hd see -q                       observe WITHOUT printing the tree: one header line, the tree
@@ -243,23 +245,66 @@ def identity(line):
     return re.sub(r"^(\s*)\[\d+\]\s", r"\1", line)
 
 
+COORDS = re.compile(r"\s*\((\d+),(\d+)\)\s*$")
+INDEX = re.compile(r"^\s*\[(\d+)\]")
+
+
+def placeless(line):
+    """Identity without the node's position: a row that only scrolled is the same row.
+
+    Every rendered line ends in the node's centre `(x,y)`, so keying identity off the whole line
+    made a list that scrolled by one row report every row as removed AND re-added — a delta twice
+    the size of the tree, which `see` then discards for the whole tree. That is what the
+    2026-08-13 A/B/C measured: 1,024 of the 1,287 hybrid re-observations printed
+    "changed too much to diff", i.e. the diff was almost never the thing that got printed.
+    """
+    return COORDS.sub("", identity(line))
+
+
+def node_index(line):
+    m = INDEX.search(line)
+    return m.group(1) if m else "?"
+
+
+def coords(line):
+    m = COORDS.search(line)
+    return m.group(0).strip() if m else ""
+
+
+def move_line(old, new):
+    """A node the caller has already read, at a new index and/or position — one short line.
+
+    The caller has the old line in its context, so the only news is where the node went. Naming
+    it by its OLD index is what makes the new index usable: `hd tap` resolves against the tree
+    `see` just cached, so a printed renumbering keeps a scrolled row tappable without reprinting
+    it.
+    """
+    oi, ni = node_index(old), node_index(new)
+    return f"~ [{oi}]->[{ni}] {coords(new)}" if oi != ni else f"~ [{ni}] {coords(new)}"
+
+
 def diff_lines(old, new):
-    """(added lines with their current indexes, removed lines).
+    """(added lines with their current indexes, removed lines, (old, new) pairs that moved).
 
     Deliberately set-based rather than a sequence diff: what an agent needs after a tap is
     "what is on screen now that was not before", and a scrolled list would otherwise report
-    every row as moved.
+    every row as moved. Matching ignores index and position, so a row that merely slid up the
+    screen is reported as a renumbering rather than as a removal plus an addition.
     """
-    old_ids = collections.Counter(identity(l) for l in old)
-    added = []
+    buckets = collections.defaultdict(collections.deque)
+    for l in old:
+        buckets[placeless(l)].append(l)
+    added, moved = [], []
     for l in new:
-        key = identity(l)
-        if old_ids[key] > 0:
-            old_ids[key] -= 1
+        q = buckets.get(placeless(l))
+        if q:
+            o = q.popleft()
+            if node_index(o) != node_index(l) or coords(o) != coords(l):
+                moved.append((o, l))
         else:
             added.append(l)
-    removed = [l.strip() for l, n in old_ids.items() if n > 0]
-    return added, removed
+    removed = [l.strip() for q in buckets.values() for l in q]
+    return added, removed, moved
 
 
 def informative_mask(shown):
@@ -348,8 +393,9 @@ def see(full=False, find=None, diff=True, quiet=False):
     # Only diff against a tree rendered the same way. A compact tree against a --full one
     # reports every layout container as removed, which is noise, not a change.
     if diff and not find and base and base.get("lines"):
-        added, removed = diff_lines(base["lines"], lines)
-        out = [f"+ {l}" for l in added] + [f"- {l}" for l in removed]
+        added, removed, moved = diff_lines(base["lines"], lines)
+        out = ([f"+ {l}" for l in added] + [f"- {l}" for l in removed]
+               + [move_line(o, n) for o, n in moved])
         # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
         # old tree plus the new one, so a diff would be the more expensive way to say it.
         if len("\n".join(out)) < len("\n".join(lines)):
@@ -357,8 +403,14 @@ def see(full=False, find=None, diff=True, quiet=False):
             # Deliberately does NOT name the escape hatch. In the 2026-08-10 run agents typed
             # `hd see --no-diff` 717 times against 15 deltas actually printed — an opt-out
             # advertised on every delta and in the verb list is an opt-out that gets typed.
-            print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)} "
-                  f"of {len(shown)} nodes (diff vs last see, profile={profile}; "
+            # The legend for `~` is printed only when something moved: a header that explains a
+            # notation the delta does not use is pure overhead on the small deltas this verb
+            # exists for.
+            moves = f" ~{len(moved)}" if moved else ""
+            legend = ("; `~ [was]->[now] (x,y)` is a node you have read, renumbered"
+                      if moved else "")
+            print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)}{moves} "
+                  f"of {len(shown)} nodes (diff vs last see, profile={profile}{legend}; "
                   f"unlisted nodes are unchanged and keep their indexes)")
             print("\n".join(out) if out else "# no change since the last see")
             return

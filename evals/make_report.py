@@ -188,6 +188,52 @@ def commands():
         return None
 
 
+def diff_outcome_section():
+    """What a plain `hd see` actually PRINTED: the delta, or the whole tree after all.
+
+    The verb mix says which observation an agent asked for; this says which one it got. Counted
+    per hybrid session by searching its events for the two headers `see` can emit
+    (`devin_session_events action=search`, one query per outcome), written to
+    `data/diff_outcomes.json`. A delta that is discarded for the whole tree costs a full tree
+    AND the dump that produced it, so this ratio — not the verb mix — is what decides whether
+    the cheap re-observation is real.
+    """
+    try:
+        d = json.load(open(DATA / "diff_outcomes.json"))
+    except (OSError, ValueError):
+        return ""
+    whole = sum(v["whole"] for v in d.values())
+    delta = sum(v["delta"] for v in d.values()) + sum(v["nochange"] for v in d.values())
+    tot = whole + delta
+    if not tot:
+        return ""
+    worst = sorted(d.items(), key=lambda kv: -kv[1]["whole"])[:3]
+    return "\n".join([
+        "", "### What a plain `hd see` printed", "",
+        "| outcome | count | share |", "|---|---:|---:|",
+        f"| whole tree (`screen changed too much to diff`) | {whole:,} | {whole / tot:.0%} |",
+        f"| delta | {delta:,} | {delta / tot:.0%} |", "",
+        "Counted over every delta-capable look — the 422 plain `hd see` commands above plus "
+        "the look each action folds in, which is why the total exceeds the command count. "
+        "The delta is the reason a re-observation is cheap, and it was discarded "
+        f"{whole / tot:.0%} of the time. Worst cells: "
+        + ", ".join(f"{k} ({v['whole']} whole / {v['delta'] + v['nochange']} delta)"
+                    for k, v in worst) + ".",
+        "",
+        "Mechanism: every rendered line ends in the node's centre `(x,y)`, and the diff matched "
+        "lines whole, so a list scrolled by one row scored all 40 rows as removed AND re-added "
+        "— a delta twice the size of the tree, which `see` then correctly discarded for the "
+        "tree. It is the scrolling apps that pay: Amaze and Seal, whose suites page through "
+        "file and download lists, printed the whole tree on 91-183 re-observations each, while "
+        "Joplin's form-driven suite printed 2-29. "
+        "`evals/bench_scroll_diff.py` is the bench for the fix (match on the line without its "
+        "index or coordinates, report a row that only moved as one `~ [was]->[now] (x,y)` "
+        "line): 22% fewer characters per re-observation over the six apps' scroll cases, and "
+        "whole-tree fallbacks 6/24 -> 1/24, with the screen-turnover and stale-baseline "
+        "fallbacks intact.",
+    ])
+
+
 def verbs_section():
     """Which observation verb the hybrid arm actually typed.
 
@@ -498,6 +544,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {billed_section()}
 {gap_section()}
 {verbs_section()}
+{diff_outcome_section()}
 {field_edit_section()}
 {acli_section()}
 
