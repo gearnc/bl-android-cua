@@ -44,8 +44,14 @@ Verbs:
                          `hd tap 5 -n; hd tap 9 -n; hd tap 3` is one turn and one tree.
                          The look is what costs turns, not tokens.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
+  hd tap "PAT"           tap the node whose line matches regex PAT — no look needed to turn a
+                         label you already know into an index. Observes the screen itself if the
+                         cached tree is stale. When PAT names several distinct nodes it taps
+                         none and prints them with their indexes, so picking one still costs no
+                         extra look. `hd tap "Save"` is `hd see --find Save` + `hd tap 7`, in
+                         one turn.
   hd tap-xy <x> <y>      raw coordinate tap
-  hd longpress <index>   long-press node <index> — THE way to open an item's context menu
+  hd longpress <index|"PAT">  long-press node <index> — THE way to open an item's context menu
                          (rename/delete/copy on list items and files). Try this FIRST when a
                          per-item action has no visible button.
   hd longpress-xy <x> <y>  raw coordinate long-press
@@ -469,6 +475,44 @@ def find_cached(pat):
     # the branch above), which is what `hd see --find` stopped doing in #11.
     print_short(st["lines"], st.get("informative") or [], f"NO MATCH in the cache ({age}s old)")
 
+def tap_pattern(pat, long=False):
+    """Tap the node a PATTERN names, so naming a target costs no separate look.
+
+    An index is a fact about a rendering, so it can only be learned by buying one. Over the
+    2026-08-15 A/B/C the hybrid arm spent 236 commands on a look with no action in it, and 115
+    of those — in all 12 of its runs — were immediately followed by nothing but `hd tap <index>`:
+    the look existed to turn a label the agent already knew into a number. The acli arm never
+    paid that turn; it typed `--click '[title=Save]'` 150 times.
+
+    The tree is on disk (or one dump away), so hd can do that resolution itself. Ambiguity is
+    the reason this cannot just take the first hit — the failure `tap` guards against in F4/F8
+    — so a pattern matching several nodes prints them with their indexes and taps nothing: the
+    caller recovers with `hd tap <index>` off THAT list, still without buying a look.
+    """
+    st = json.load(open(STATE)) if os.path.exists(STATE) else None
+    if not st or time.time() - st.get("ts", 0) > DIFF_MAX_AGE:
+        see(quiet=True)
+        st = json.load(open(STATE))
+    rx = re.compile(pat, re.I)
+    hits = [i for i, ln in enumerate(st["lines"]) if rx.search(ln)]
+    if not hits:
+        print_short(st["lines"], st.get("informative") or [], f"NO MATCH for {pat!r}")
+        sys.exit(f"no node matches {pat!r} — tap by index from the tree above")
+    if len(hits) > 1:
+        # A parent and the child it wraps are one target, not two: same label, same centre.
+        # Prefer the clickable one, and treat co-located hits as the same node.
+        clickable = [i for i in hits if st["nodes"][i].get("clickable")]
+        pool = clickable or hits
+        first = st["nodes"][pool[0]]
+        same_spot = all(abs(st["nodes"][i]["cx"] - first["cx"]) <= 40
+                        and abs(st["nodes"][i]["cy"] - first["cy"]) <= 40 for i in pool)
+        if len(pool) > 1 and not same_spot:
+            sys.exit(f"{pat!r} matches {len(pool)} nodes — tap the one you mean:\n"
+                     + "\n".join(st["lines"][i] for i in pool[:10]))
+        hits = pool
+    tap(hits[0], long=long)
+
+
 def tap(index, long=False):
     st = load_state()
     if time.time() - st["ts"] > 120:
@@ -637,10 +681,9 @@ def main():
             quiet="-q" in a or "--quiet" in a)
     elif cmd == "find":
         find_cached(a[1])
-    elif cmd == "tap":
-        tap(int(a[1]))
-    elif cmd == "longpress":
-        tap(int(a[1]), long=True)
+    elif cmd in ("tap", "longpress"):
+        long = cmd == "longpress"
+        tap(int(a[1]), long=long) if a[1].isdigit() else tap_pattern(a[1], long=long)
     elif cmd == "tap-xy":
         sh("shell", "input", "tap", a[1], a[2]); print(f"tapped ({a[1]},{a[2]})")
     elif cmd == "longpress-xy":

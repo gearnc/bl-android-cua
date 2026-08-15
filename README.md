@@ -13,7 +13,8 @@ Devin skill plugin for token-efficient Android computer use (CUA).
   - `hd.py` — the bundled zero-dependency CLI (Python 3 stdlib + adb) the skill drives:
     `hd see [--full|--find PAT|-q]` (a re-`see` prints only the delta; `-q` caches
     the tree and prints nothing), `hd find PAT` (grep the cached tree, no new dump),
-    `hd tap/longpress <index>`, `hd tap-xy/longpress-xy`,
+    `hd tap/longpress <index|"PAT">` (a name resolves against the tree, and an ambiguous one
+    taps nothing and prints the candidates), `hd tap-xy/longpress-xy`,
     `hd type`, `hd key`, `hd swipe`, `hd shot`, `hd wait-idle`. Every action verb observes
     after acting by default — act, wait for the screen to settle, then print what the next
     `hd see` would have, in one command instead of two, because an agent is billed per turn

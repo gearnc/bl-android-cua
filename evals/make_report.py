@@ -373,6 +373,53 @@ def focus_hunt_section():
     return "\n".join(out)
 
 
+LOOK_ONLY = re.compile(r"\bhd\s+(?:see|find)\b")
+ACTED = re.compile(r"\bhd\s+(?:tap|tap-xy|longpress|longpress-xy|type|key|swipe|clear)\b")
+INDEX_TAP = re.compile(r"\bhd\s+(?:tap|longpress)\s+\d+")
+SELECTOR_ACT = re.compile(r"--(?:click|type)\s")
+
+
+def label_resolution_section():
+    """Looks bought for no reason but to turn a label into an index.
+
+    An index names a node only in the rendering that printed it, so `hd tap` could only be
+    reached through an observation. The signature is a command containing a look and no action,
+    followed immediately by a command whose action is `hd tap <index>`: the agent knew what it
+    wanted before it looked, and the look existed to number it.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    pure, resolving = collections.Counter(), collections.Counter()
+    selector, cells = collections.Counter(), collections.defaultdict(set)
+    for k, cs in cmds.items():
+        arm = k.split("|")[1]
+        for i, c in enumerate(cs):
+            selector[arm] += len(SELECTOR_ACT.findall(c))
+            if not LOOK_ONLY.search(c) or ACTED.search(c):
+                continue
+            pure[arm] += 1
+            if i + 1 < len(cs) and INDEX_TAP.search(cs[i + 1]):
+                resolving[arm] += 1
+                cells[arm].add(k)
+    if not sum(pure.values()):
+        return ""
+    out = ["", "### Looks bought to turn a label into an index", "",
+           "| | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS),
+           "| look-only commands |" + "".join(f" {pure[a]} |" for a in ARMS),
+           "| ...followed by nothing but an index tap |"
+           + "".join(f" {resolving[a]} |" for a in ARMS),
+           "| runs doing it |" + "".join(f" {len(cells[a])}/{len(A[a])} |" for a in ARMS),
+           "| actions taken by selector/label |" + "".join(f" {selector[a]} |" for a in ARMS), "",
+           f"{resolving['hybrid']} of the hybrid arm's {pure['hybrid']} look-only commands, in "
+           f"{len(cells['hybrid'])}/{len(A['hybrid'])} runs, were followed by nothing but "
+           "`hd tap <index>` \u2014 a turn spent numbering a target the agent could already "
+           f"name. The acli arm never paid it: it acts on a selector "
+           f"({selector['acli']} `--click`/`--type` invocations) and lets its tool resolve the "
+           "label. `hd tap \"PAT\"` closes that gap; `evals/test_tap_label.py` prices it."]
+    return "\n".join(out)
+
+
 def rendering(flags):
     """Which tree a `see` invocation renders: `--find` and `-q` force the full one."""
     if "--find" in flags or re.search(r"(^|\s)-q(\s|$)|--quiet", flags):
@@ -594,6 +641,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {diff_outcome_section()}
 {field_edit_section()}
 {focus_hunt_section()}
+{label_resolution_section()}
 {acli_section()}
 
 ## Method notes
