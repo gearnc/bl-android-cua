@@ -57,8 +57,10 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    **When you can already name the target, tap it by name and skip step 1 entirely**:
    `hd tap "Save"` matches the same regex `--find` does, observes the screen itself if its
    cached tree is stale, and taps the node — one turn where a look plus a tap was two.
-   In the 2026-08-15 A/B/C, 115 of the hybrid arm's 236 look-only commands existed for nothing
-   but to turn a label into an index; over the six default apps the pattern form lands on the
+   In the 2026-08-15 A/B/C at `b3898c3`, 100 of the hybrid arm's 252 look-only commands existed
+   for nothing but to turn a label into an index while the pattern form took only 16% of taps, so
+   `hd tap <index>` now says so itself — once a session, after an index tap that a standalone look
+   preceded, naming the pattern that would have skipped it; over the six default apps the pattern form lands on the
    same node as the index form 16/16 times at 50% of the turns and 24% of the printed bytes
    (`evals/test_tap_label.py`). If the name is ambiguous it taps NOTHING and prints the
    candidates with their indexes, so choosing still costs no extra look. Use an index when you

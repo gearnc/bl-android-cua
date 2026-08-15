@@ -74,6 +74,8 @@ ADB = os.environ.get("HD_ADB", "adb")
 STATE = "/tmp/hd_last_tree.json"
 FW_CACHE = "/tmp/hd_fw_cache.json"
 HINTED = "/tmp/hd_hinted_no_see"
+LOOKED = "/tmp/hd_looked_only"        # last command was a standalone look; any action clears it
+HINTED_LABEL = "/tmp/hd_hinted_tap_label"
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
 DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
@@ -513,7 +515,39 @@ def tap_pattern(pat, long=False):
     tap(hits[0], long=long)
 
 
-def tap(index, long=False):
+def label_of(node):
+    return node.get("text") or node.get("desc") or node.get("id") or ""
+
+
+def hint_tap_label(st, node):
+    """Name the pattern form the moment a look is spent buying an index, once per session.
+
+    `hd tap "PAT"` shipped in #17 and SKILL.md leads with it, and the 2026-08-15 A/B/C at
+    `b3898c3` still shows the idiom it replaces: 100 of the hybrid arm's 252 look-only commands,
+    in 11 of 12 runs, were followed by nothing but `hd tap <index>`, while the pattern form was
+    typed on 126 of 781 taps (16%). Documentation moved that from 115/236 to 100/252 and no
+    further — the same shape as `-s`, which was typed on 20% of actions until the fold became
+    the default. A verb the caller is at that instant paying to avoid is worth one line, printed
+    where the cost is (after an index tap that a look alone preceded), naming the pattern that
+    would have worked, and only when that pattern is unambiguous — a suggestion that would have
+    tapped a different node costs more than it saves.
+    """
+    if os.path.exists(HINTED_LABEL):
+        return
+    label = label_of(node)
+    if not label or not label.isascii() or len(label) < 3:
+        return
+    rx = re.compile(re.escape(label), re.I)
+    hits = [n for n in st.get("nodes", []) if rx.search(label_of(n))]
+    spot = all(abs(n["cx"] - node["cx"]) <= 40 and abs(n["cy"] - node["cy"]) <= 40 for n in hits)
+    if not spot:
+        return
+    print(f'# (that look only bought an index — `hd tap "{label}"` taps the same node without '
+          f'one; it re-observes itself when the tree is stale)')
+    open(HINTED_LABEL, "w").close()
+
+
+def tap(index, long=False, after_look=False):
     st = load_state()
     if time.time() - st["ts"] > 120:
         sys.exit("last `see` is >120s old — re-observe first (F8)")
@@ -544,6 +578,8 @@ def tap(index, long=False):
     else:
         sh("shell", "input", "tap", str(n["cx"]), str(n["cy"]))
     print(f"{'long-pressed' if long else 'tapped'} [{index}] {n['class']} {json.dumps(n['text'] or n['desc'])} at ({n['cx']},{n['cy']})")
+    if after_look:
+        hint_tap_label(st, n)
 
 KEYS = {"back": "4", "home": "3", "enter": "66", "tab": "61", "delete": "67", "appswitch": "187"}
 MOVE_END, DEL = "123", "67"
@@ -672,6 +708,9 @@ def main():
     if not a:
         sys.exit(__doc__)
     cmd = a[0]
+    # A look with no action in it, then an index tap, is the idiom `hd tap "PAT"` exists to
+    # replace; the two halves are separate processes, so the first leaves a marker for the second.
+    after_look = os.path.exists(LOOKED)
     # `hd type "-n"` types a literal `-n`, so flags are read past each verb's own operands.
     flags = a[{"type": 2, "tap-xy": 3, "longpress-xy": 3, "clear": 1}.get(cmd, 2):]
     observe, pattern, explicit = see_flag(flags) if cmd in ACTIONS else (False, None, True)
@@ -683,7 +722,8 @@ def main():
         find_cached(a[1])
     elif cmd in ("tap", "longpress"):
         long = cmd == "longpress"
-        tap(int(a[1]), long=long) if a[1].isdigit() else tap_pattern(a[1], long=long)
+        (tap(int(a[1]), long=long, after_look=after_look) if a[1].isdigit()
+         else tap_pattern(a[1], long=long))
     elif cmd == "tap-xy":
         sh("shell", "input", "tap", a[1], a[2]); print(f"tapped ({a[1]},{a[2]})")
     elif cmd == "longpress-xy":
@@ -718,6 +758,10 @@ def main():
         print("idle" if wait_idle(timeout) else "timeout (proceeding)")
     else:
         sys.exit(f"unknown verb {cmd!r}\n{__doc__}")
+    if cmd in ("see", "find"):
+        open(LOOKED, "w").close()
+    elif cmd in ACTIONS and os.path.exists(LOOKED):
+        os.remove(LOOKED)
     if observe:
         if not explicit:
             hint_no_see()
