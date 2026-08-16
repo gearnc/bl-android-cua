@@ -479,6 +479,13 @@ LOOK = re.compile(r"\bhd\s+(?:see|find|shot)\b|accessibility-cli|\b[A-Za-z_][\w.
                   rf"(?:^|[;&|]\s*){WRAPPER_PATH}\b|"
                   rf"\b(?:python3?|bash|sh|source)\s+{WRAPPER_PATH}\b|"
                   r"uiautomator\s+dump|screencap")
+# hd's action verbs observe after acting unless `-n` is passed, so a tap IS a look — counting
+# only the explicit `see`/`find` verbs credited the hybrid arm with a third of the looks it took
+# and inflated its tokens-per-look by the same factor, hiding that the arms pay the SAME price
+# per look and differ in how often they take one.
+FOLD = re.compile(r"\bhd(?:\.py)?\s+(?:tap|tap-xy|longpress|longpress-xy|type|clear|key|swipe|"
+                  r"run)\b")
+NO_SEE = re.compile(r"(?:^|\s)(?:-n|--no-see)(?:\s|$)")
 AUTHORING = re.compile(r"cat\s*>\s*|tee\s+[~/\w.-]+|<<\s*'?EOF|chmod\s+\+x")
 # Scripts on the box that are not observations: booting the emulator is not looking at it.
 NOT_A_LOOK = re.compile(r"start-emulator\.sh|boot[\w-]*\.sh")
@@ -493,8 +500,12 @@ def is_look(cmd):
     names a script that is not an observation at all. Matching the whole command would count
     both as looks.
     """
-    return any(LOOK.search(seg) and not AUTHORING.search(seg) and not NOT_A_LOOK.search(seg)
-               for seg in SEGMENT.split(cmd))
+    def observed(seg):
+        if AUTHORING.search(seg) or NOT_A_LOOK.search(seg):
+            return False
+        return bool(LOOK.search(seg)) or bool(FOLD.search(seg) and not NO_SEE.search(seg))
+
+    return any(observed(seg) for seg in SEGMENT.split(cmd))
 
 
 def slope(xs, ys):
@@ -781,10 +792,8 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
   loop the agent wrote is one event, so counts are a floor, and they are a lower floor for the
   arm that wrapped its tool.
 - Raw data: `runs.json` (cell -> session), `metrics.json`, `tasks.json`, `bypass.json`.
-- Dump validity: the preflight `evals/test_dumps.py` reported no `problems` for any of the six
-  apps, but several apps' dump commands exited non-zero (the command reads app files that do not
-  exist in a freshly installed app). The script does not fail on that, so the playbook's "rc=0
-  for every app" condition was NOT strictly met; the per-app trees themselves dumped and the
-  final state dumps graded cleanly, so the matrix stands, but this is a weaker preflight than
-  the procedure asks for and `test_dumps.py` should be made to exit non-zero on it.
+- Dump validity: `python3 evals/test_dumps.py markor amaze seal unitto joplin lesspass` returned
+  rc=0 with no `problems` for all six apps in the matrix, with each app launched first — a dump
+  that reads an app's files exits non-zero until the app has run once. Whole-suite runs of the
+  script still fail on apps outside this matrix, which is not a condition on this run.
 """)

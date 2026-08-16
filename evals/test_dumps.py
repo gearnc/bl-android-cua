@@ -1,6 +1,14 @@
-"""Check every suite's verification dump runs clean against the live emulator.
+"""Check a suite's verification dump runs clean against the live emulator.
 
 A dump that errors silently turns grading into self-report, so this runs before any matrix.
+
+With no arguments it checks every suite in `APPS`; the preflight condition is about the apps a
+matrix actually launches, so name them to check only those:
+
+    python3 evals/test_dumps.py markor amaze seal unitto joplin lesspass
+
+A dump that reads an app's own files exits non-zero until that app has been launched once, so
+launch the matrix's apps before running this.
 """
 import subprocess
 import sys
@@ -18,8 +26,14 @@ BAD = ("not found", "syntax error", "Permission denied")
 # The child runs the dump as `adb shell '{dump}'`, so a dump containing a single quote is spliced
 # apart before the device ever sees it. Mirror that quoting here instead of passing the dump as a
 # bare argv element, which hid a broken lesspass dump for several runs.
+which = sys.argv[1:] or list(APPS)
+unknown = [k for k in which if k not in APPS]
+if unknown:
+    sys.exit(f"unknown suite(s): {', '.join(unknown)}")
+
 failed = []
-for k, a in APPS.items():
+for k in which:
+    a = APPS[k]
     if "'" in a["dump"]:
         print(f"{k:17s} dump contains a single quote — breaks `adb shell '<dump>'` in the prompt")
         failed.append(k)
