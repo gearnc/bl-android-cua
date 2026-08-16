@@ -13,8 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from suites import APPS, build_prompt  # noqa: E402
 
 # `bare` is the baseline every ratio is taken against: it is the only arm with no tool handed to
-# it. `acli` measures DioxusLabs/accessibility-cli, prebuilt into the snapshot.
-ARMS = ("hybrid", "bare", "acli")
+# it. `acli` measures DioxusLabs/accessibility-cli, prebuilt into the snapshot. `raw` hands the
+# agent the method bare arms keep rederiving (skills/android-raw-navigation) and nothing else.
+ARMS = ("hybrid", "bare", "acli", "raw")
 BASELINE = "bare"
 
 # The standard 6-app subset: two apps per UI toolkit, chosen because their suites are long,
