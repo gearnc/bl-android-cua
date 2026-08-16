@@ -377,6 +377,11 @@ LOOK_ONLY = re.compile(r"\bhd\s+(?:see|find)\b")
 ACTED = re.compile(r"\bhd\s+(?:tap|tap-xy|longpress|longpress-xy|type|key|swipe|clear)\b")
 INDEX_TAP = re.compile(r"\bhd\s+(?:tap|longpress)\s+\d+")
 SELECTOR_ACT = re.compile(r"--(?:click|type)\s")
+# hd's own selector form. Counting only acli's `--click` read as "hybrid never acts by name",
+# which stopped being true when #17 shipped `hd tap "PAT"`: the interesting number is now its
+# adoption against the index form, not its existence.
+PATTERN_ACT = re.compile(r"\bhd\s+(?:tap|longpress)\s+['\"]")
+ANY_TAP = re.compile(r"\bhd\s+(?:tap|longpress)\s+['\"\d]")
 
 
 def label_resolution_section():
@@ -392,10 +397,13 @@ def label_resolution_section():
         return ""
     pure, resolving = collections.Counter(), collections.Counter()
     selector, cells = collections.Counter(), collections.defaultdict(set)
+    by_name, taps = collections.Counter(), collections.Counter()
     for k, cs in cmds.items():
         arm = k.split("|")[1]
         for i, c in enumerate(cs):
-            selector[arm] += len(SELECTOR_ACT.findall(c))
+            selector[arm] += len(SELECTOR_ACT.findall(c)) + len(PATTERN_ACT.findall(c))
+            by_name[arm] += len(PATTERN_ACT.findall(c))
+            taps[arm] += len(ANY_TAP.findall(c))
             if not LOOK_ONLY.search(c) or ACTED.search(c):
                 continue
             pure[arm] += 1
@@ -416,7 +424,11 @@ def label_resolution_section():
            "`hd tap <index>` \u2014 a turn spent numbering a target the agent could already "
            f"name. The acli arm never paid it: it acts on a selector "
            f"({selector['acli']} `--click`/`--type` invocations) and lets its tool resolve the "
-           "label. `hd tap \"PAT\"` closes that gap; `evals/test_tap_label.py` prices it."]
+           f"label. `hd tap \"PAT\"` is hd's form of that and was typed on "
+           f"{by_name['hybrid']} of the hybrid arm's {taps['hybrid']} taps "
+           f"({by_name['hybrid'] / max(taps['hybrid'], 1):.0%}) — documented but under-typed, so "
+           "hd names it itself after a look that bought nothing but an index "
+           "(`evals/test_tap_hint.py`; `evals/test_tap_label.py` prices the verb)."]
     return "\n".join(out)
 
 
