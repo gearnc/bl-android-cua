@@ -582,30 +582,68 @@ def label_of(node):
     return node.get("text") or node.get("desc") or node.get("id") or ""
 
 
+META = re.compile(r"[\\^$.|?*+()\[\]{}]")
+HINT_MAX = 24
+
+
+def hint_pattern(st, node):
+    """The shortest prefix of a node's label that names it and nothing else, or None.
+
+    A suggestion is only cheaper than the look it removes if it is short enough to retype and
+    safe to paste: `tap_pattern` compiles it as a regex, so a label carrying metacharacters is
+    not quotable as printed, and a sentence-long label is a worse thing to type than the index
+    the caller already has. Prefixes are tried word by word so the printed form stays a literal
+    substring of the tree line the caller can see.
+    """
+    label = label_of(node)
+    if not label or not label.isascii() or len(label) < 3:
+        return None
+    words = label.split()
+    cands = []
+    for i in range(1, len(words) + 1):
+        c = " ".join(words[:i])
+        if len(c) > HINT_MAX:
+            break
+        cands.append(c)
+    lines, nodes = st.get("lines") or [], st.get("nodes") or []
+    for cand in cands:
+        if len(cand) < 3 or META.search(cand):
+            continue
+        # Resolve exactly as `tap_pattern` would — it matches the printed LINE, not the label,
+        # so a short prefix can also hit a class name or an id the label never showed.
+        rx = re.compile(cand, re.I)
+        hits = [i for i, ln in enumerate(lines) if rx.search(ln)]
+        if not hits:
+            continue
+        clickable = [i for i in hits if nodes[i].get("clickable")]
+        pool = clickable or hits
+        first = nodes[pool[0]]
+        if len(pool) > 1 and not all(abs(nodes[i]["cx"] - first["cx"]) <= 40
+                                     and abs(nodes[i]["cy"] - first["cy"]) <= 40 for i in pool):
+            continue
+        if abs(first["cx"] - node["cx"]) <= 40 and abs(first["cy"] - node["cy"]) <= 40:
+            return cand
+    return None
+
+
 def hint_tap_label(st, node):
     """Name the pattern form the moment a look is spent buying an index, once per session.
 
-    `hd tap "PAT"` shipped in #17 and SKILL.md leads with it, and the 2026-08-15 A/B/C at
-    `b3898c3` still shows the idiom it replaces: 100 of the hybrid arm's 252 look-only commands,
-    in 11 of 12 runs, were followed by nothing but `hd tap <index>`, while the pattern form was
-    typed on 126 of 781 taps (16%). Documentation moved that from 115/236 to 100/252 and no
-    further — the same shape as `-s`, which was typed on 20% of actions until the fold became
-    the default. A verb the caller is at that instant paying to avoid is worth one line, printed
-    where the cost is (after an index tap that a look alone preceded), naming the pattern that
-    would have worked, and only when that pattern is unambiguous — a suggestion that would have
-    tapped a different node costs more than it saves.
+    `hd tap "PAT"` shipped in #17 and SKILL.md leads with it, and the idiom it replaces survived
+    both: at `477c380` the hybrid arm still spent 147 of its 291 look-only commands, in 11 of 12
+    runs, on a look followed by nothing but `hd tap <index>`, and typed the pattern form on 1 of
+    917 taps (0%, against 126/781 the run before). So the line is printed by the tool, at the
+    instant the caller pays for the thing it replaces, and — since the hint had been firing all
+    along — what it names has to be typeable: `hint_pattern` gives the shortest safe prefix, not
+    the whole label, because a suggestion the caller cannot paste or would not retype is the
+    same as no hint at all.
     """
     if os.path.exists(HINTED_LABEL):
         return
-    label = label_of(node)
-    if not label or not label.isascii() or len(label) < 3:
+    pat = hint_pattern(st, node)
+    if not pat:
         return
-    rx = re.compile(re.escape(label), re.I)
-    hits = [n for n in st.get("nodes", []) if rx.search(label_of(n))]
-    spot = all(abs(n["cx"] - node["cx"]) <= 40 and abs(n["cy"] - node["cy"]) <= 40 for n in hits)
-    if not spot:
-        return
-    print(f'# (that look only bought an index — `hd tap "{label}"` taps the same node without '
+    print(f'# (that look only bought an index — `hd tap "{pat}"` taps the same node without '
           f'one; it re-observes itself when the tree is stale)')
     open(HINTED_LABEL, "w").close()
 
