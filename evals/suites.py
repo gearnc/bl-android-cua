@@ -488,7 +488,7 @@ APPS = {
     ),
     "lesspass": dict(
         pkg="com.lesspass.android", stack="rn", label="LessPass",
-        dump=r"find /data/data/com.lesspass.android -name '*.xml' -o -name '*.db' -o -name '*.sqlite' 2>/dev/null | head; echo ---; cat /data/data/com.lesspass.android/shared_prefs/*.xml 2>/dev/null | head -80",
+        dump=r"ls -la /data/data/com.lesspass.android/shared_prefs /data/data/com.lesspass.android/databases 2>/dev/null; echo ---; cat /data/data/com.lesspass.android/shared_prefs/*.xml 2>/dev/null | head -80; echo ---; sqlite3 /data/data/com.lesspass.android/databases/RKStorage .dump 2>/dev/null | head -c 4000; echo",
         tasks=[
             "Generate a password for site `example.com`, login `alice`, master password `hunter2`; report the generated password.",
             "Regenerate the same password and confirm it is identical.",

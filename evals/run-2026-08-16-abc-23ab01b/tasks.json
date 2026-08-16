@@ -1,0 +1,290 @@
+{
+ "amaze|bare|1": {
+  "acu": 20.663480355313336,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 1,
+  "n_partial": 0,
+  "state": "suspended"
+ },
+ "amaze|bare|2": {
+  "acu": 24.322850362886896,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 1,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "amaze|hybrid|1": {
+  "acu": 30.315481837642157,
+  "detail": "waiting_for_user",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "running"
+ },
+ "amaze|hybrid|2": {
+  "acu": 22.622951127264713,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "amaze|raw|1": {
+  "acu": 20.486360699874048,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "amaze|raw|2": {
+  "acu": 17.68285457197554,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|bare|1": {
+  "acu": 18.7942687659531,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|bare|2": {
+  "acu": 11.526516869706558,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|hybrid|1": {
+  "acu": 12.580585102540008,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|hybrid|2": {
+  "acu": 14.719623287028009,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|raw|1": {
+  "acu": 12.523494928528523,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "joplin|raw|2": {
+  "acu": 8.90501983149964,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "lesspass|bare|1": {
+  "acu": 9.808563945999614,
+  "detail": "inactivity",
+  "n_done": 30,
+  "n_failed": 0,
+  "n_partial": 0,
+  "state": "suspended"
+ },
+ "lesspass|bare|2": {
+  "acu": 15.387922864384633,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "lesspass|hybrid|1": {
+  "acu": 8.025909112564815,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 1,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "lesspass|hybrid|2": {
+  "acu": 11.33789862122711,
+  "detail": "inactivity",
+  "n_done": 30,
+  "n_failed": 0,
+  "n_partial": 0,
+  "state": "suspended"
+ },
+ "lesspass|raw|1": {
+  "acu": 5.422524014954475,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 1,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "lesspass|raw|2": {
+  "acu": 7.055337387278524,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 0,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "markor|bare|1": {
+  "acu": 35.6619001230326,
+  "detail": "waiting_for_user",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "running"
+ },
+ "markor|bare|2": {
+  "acu": 23.432952490848468,
+  "detail": "inactivity",
+  "n_done": 30,
+  "n_failed": 0,
+  "n_partial": 0,
+  "state": "suspended"
+ },
+ "markor|hybrid|1": {
+  "acu": 19.793533739169728,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "markor|hybrid|2": {
+  "acu": 19.770681420353895,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "markor|raw|1": {
+  "acu": 12.99856146229258,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 0,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "markor|raw|2": {
+  "acu": 13.087489343210507,
+  "detail": "inactivity",
+  "n_done": 29,
+  "n_failed": 0,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "seal|bare|1": {
+  "acu": 18.28035680036183,
+  "detail": "inactivity",
+  "n_done": 25,
+  "n_failed": 0,
+  "n_partial": 5,
+  "state": "suspended"
+ },
+ "seal|bare|2": {
+  "acu": 16.760262749326596,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 0,
+  "n_partial": 3,
+  "state": "suspended"
+ },
+ "seal|hybrid|1": {
+  "acu": 17.535812973689005,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 1,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "seal|hybrid|2": {
+  "acu": 14.169846892423895,
+  "detail": "inactivity",
+  "n_done": 25,
+  "n_failed": 0,
+  "n_partial": 5,
+  "state": "suspended"
+ },
+ "seal|raw|1": {
+  "acu": 13.890688638978679,
+  "detail": "inactivity",
+  "n_done": 25,
+  "n_failed": 0,
+  "n_partial": 5,
+  "state": "suspended"
+ },
+ "seal|raw|2": {
+  "acu": 11.946971237185288,
+  "detail": "inactivity",
+  "n_done": 24,
+  "n_failed": 1,
+  "n_partial": 5,
+  "state": "suspended"
+ },
+ "unitto|bare|1": {
+  "acu": 15.26886169000526,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "unitto|bare|2": {
+  "acu": 13.914995035558938,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 1,
+  "n_partial": 2,
+  "state": "suspended"
+ },
+ "unitto|hybrid|1": {
+  "acu": 13.419629314021,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "unitto|hybrid|2": {
+  "acu": 13.163257668059735,
+  "detail": "inactivity",
+  "n_done": 25,
+  "n_failed": 3,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "unitto|raw|1": {
+  "acu": 9.654311767738696,
+  "detail": "inactivity",
+  "n_done": 27,
+  "n_failed": 2,
+  "n_partial": 1,
+  "state": "suspended"
+ },
+ "unitto|raw|2": {
+  "acu": 9.166657393976736,
+  "detail": "inactivity",
+  "n_done": 28,
+  "n_failed": 1,
+  "n_partial": 1,
+  "state": "suspended"
+ }
+}

@@ -15,9 +15,17 @@ BAD = ("not found", "syntax error", "Permission denied")
 # The playbook's preflight condition is "rc=0 with no problems for every app", but printing the
 # return code and exiting 0 anyway made that condition unenforceable: the 16 Aug matrix launched
 # with several apps' dumps exiting non-zero and the caveat only surfaced in the report.
+# The child runs the dump as `adb shell '{dump}'`, so a dump containing a single quote is spliced
+# apart before the device ever sees it. Mirror that quoting here instead of passing the dump as a
+# bare argv element, which hid a broken lesspass dump for several runs.
 failed = []
 for k, a in APPS.items():
-    r = subprocess.run([ADB, "shell", a["dump"]], capture_output=True, timeout=180)
+    if "'" in a["dump"]:
+        print(f"{k:17s} dump contains a single quote — breaks `adb shell '<dump>'` in the prompt")
+        failed.append(k)
+        continue
+    r = subprocess.run(["bash", "-c", f"{ADB} shell '{a['dump']}'"], capture_output=True,
+                       timeout=180)
     out = r.stdout.decode(errors="replace") + r.stderr.decode(errors="replace")
     bad = [ln for ln in out.splitlines() if any(b in ln for b in BAD)]
     print(f"{k:17s} rc={r.returncode} bytes={len(out):6d} problems={bad[:2]}")

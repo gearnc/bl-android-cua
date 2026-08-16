@@ -89,6 +89,7 @@ FW_CACHE = "/tmp/hd_fw_cache.json"
 HINTED = "/tmp/hd_hinted_no_see"
 LOOKED = "/tmp/hd_looked_only"        # last command was a standalone look; any action clears it
 HINTED_LABEL = "/tmp/hd_hinted_tap_label"
+HINTED_FIND = "/tmp/hd_hinted_see_find"
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
 DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
@@ -234,7 +235,7 @@ def render(nodes, full, profile="views"):
             n["text"] = n["text"].replace("&amp;", "&")
             n["desc"] = n["desc"].replace("&amp;", "&")
     shown = nodes if full else [n for n in nodes if is_informative(n)]
-    lines = []
+    lines, depths = [], []
     for i, n in enumerate(shown):
         label = n["text"] or n["desc"]
         parts = [f"[{i}]", n["class"] or "node"]
@@ -262,8 +263,15 @@ def render(nodes, full, profile="views"):
         if flags:
             parts.append(f"<{flags}>")
         parts.append(f"({n['cx']},{n['cy']})")
-        lines.append("  " * min(n["depth"], 6) + " ".join(parts))
-    return shown, lines
+        depths.append(min(n["depth"], 6))
+        lines.append(" ".join(parts))
+    # Indentation is only worth its bytes where it varies. Every informative node of a real app
+    # sits below the depth cap — over the six eval apps 100% of rendered nodes clamped to 6, so
+    # the tree arrived with a constant 12-space prefix on every line: 22% of the printed bytes
+    # of a look, carrying no structure at all. Re-basing on the shallowest SHOWN node keeps the
+    # relative nesting that does carry structure and drops the constant.
+    base = min(depths) if depths else 0
+    return shown, ["  " * (d - base) + line for d, line in zip(depths, lines)]
 
 def identity(line):
     """A node line without its index, so an inserted row does not mark everything below it new."""
@@ -507,8 +515,13 @@ def see(full=False, find=None, diff=True, quiet=False):
         print_short(lines, informative_mask(shown), "NO MATCH")
         return
     print(f"# screen {size[0]}x{size[1]}, {len(shown)} nodes ({'full' if full else 'compact'}, profile={profile} {src})")
-    if profile == "views" and not full and len(shown) > 25:
+    # Once per session, for the same reason `--no-diff` is advertised once: a tip reprinted on
+    # every look is paid for on every look. The hybrid arm of the 2026-08-16 A/B/C typed 202
+    # plain `hd see`s in views cells, so this line was bought ~200 times to say one thing.
+    if (profile == "views" and not full and len(shown) > 25
+            and not os.path.exists(HINTED_FIND)):
         print("# TIP (views profile): this tree is labeled — `hd see --find PAT` is much cheaper when you know the target")
+        open(HINTED_FIND, "w").close()
     print("\n".join(lines))
 
 def load_state():

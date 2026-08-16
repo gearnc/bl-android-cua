@@ -703,7 +703,7 @@ def capture_rates():
         rs = [r for r in A[a] if r.get("captured_commands") and r.get("exec_calls")]
         if rs:
             out.append(f"{s.mean([r['captured_commands'] / r['exec_calls'] for r in rs]):.0%} {a}")
-    return ", ".join(out) or "an unmeasured share of"
+    return ", ".join(out) or "an unmeasured share"
 
 
 capture = capture_rates()

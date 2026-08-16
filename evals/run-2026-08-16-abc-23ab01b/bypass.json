@@ -1,0 +1,182 @@
+{
+ "amaze|bare|1": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "amaze|bare|2": {
+  "disk_reads": 6,
+  "intents": 0,
+  "writes": 0
+ },
+ "amaze|hybrid|1": {
+  "disk_reads": 23,
+  "intents": 0,
+  "writes": 0
+ },
+ "amaze|hybrid|2": {
+  "disk_reads": 29,
+  "intents": 0,
+  "writes": 0
+ },
+ "amaze|raw|1": {
+  "disk_reads": 22,
+  "intents": 0,
+  "writes": 2
+ },
+ "amaze|raw|2": {
+  "disk_reads": 31,
+  "intents": 0,
+  "writes": 0
+ },
+ "joplin|bare|1": {
+  "disk_reads": 1,
+  "intents": 0,
+  "writes": 1
+ },
+ "joplin|bare|2": {
+  "disk_reads": 1,
+  "intents": 0,
+  "writes": 1
+ },
+ "joplin|hybrid|1": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "joplin|hybrid|2": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "joplin|raw|1": {
+  "disk_reads": 3,
+  "intents": 0,
+  "writes": 1
+ },
+ "joplin|raw|2": {
+  "disk_reads": 6,
+  "intents": 0,
+  "writes": 1
+ },
+ "lesspass|bare|1": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "lesspass|bare|2": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 2
+ },
+ "lesspass|hybrid|1": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 0
+ },
+ "lesspass|hybrid|2": {
+  "disk_reads": 6,
+  "intents": 0,
+  "writes": 2
+ },
+ "lesspass|raw|1": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "lesspass|raw|2": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 0
+ },
+ "markor|bare|1": {
+  "disk_reads": 4,
+  "intents": 0,
+  "writes": 0
+ },
+ "markor|bare|2": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 0
+ },
+ "markor|hybrid|1": {
+  "disk_reads": 28,
+  "intents": 0,
+  "writes": 0
+ },
+ "markor|hybrid|2": {
+  "disk_reads": 7,
+  "intents": 0,
+  "writes": 1
+ },
+ "markor|raw|1": {
+  "disk_reads": 18,
+  "intents": 0,
+  "writes": 2
+ },
+ "markor|raw|2": {
+  "disk_reads": 10,
+  "intents": 0,
+  "writes": 0
+ },
+ "seal|bare|1": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "seal|bare|2": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "seal|hybrid|1": {
+  "disk_reads": 14,
+  "intents": 0,
+  "writes": 1
+ },
+ "seal|hybrid|2": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 1
+ },
+ "seal|raw|1": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "seal|raw|2": {
+  "disk_reads": 3,
+  "intents": 0,
+  "writes": 1
+ },
+ "unitto|bare|1": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "unitto|bare|2": {
+  "disk_reads": 0,
+  "intents": 0,
+  "writes": 0
+ },
+ "unitto|hybrid|1": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "unitto|hybrid|2": {
+  "disk_reads": 2,
+  "intents": 0,
+  "writes": 1
+ },
+ "unitto|raw|1": {
+  "disk_reads": 4,
+  "intents": 0,
+  "writes": 1
+ },
+ "unitto|raw|2": {
+  "disk_reads": 4,
+  "intents": 0,
+  "writes": 0
+ }
+}
