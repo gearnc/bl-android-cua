@@ -569,8 +569,9 @@ ARM_HYBRID = (
 
 ARM_BARE = (
     "IMPORTANT — tooling constraint for this run: you must NOT use the "
-    "`android-hybrid-navigation` skill, the `hd` / `hd.py` CLI, or any part of it, even though it "
-    "is loaded in your environment. Do not read its SKILL.md and do not invoke it. Drive the "
+    "`android-hybrid-navigation` or `android-raw-navigation` skills, the `hd` / `hd.py` CLI, or "
+    "any part of them, even though they are loaded in your environment. Do not read their "
+    "SKILL.md files and do not invoke them. Drive the "
     "emulator with your own native computer-use approach instead."
 )
 
@@ -584,11 +585,26 @@ ARM_BARE = (
 # and nothing else keeps the prompt asymmetry to one paragraph, exactly as for the other arms.
 ARM_ACLI = (
     "IMPORTANT — tooling constraint for this run: you must NOT use the "
-    "`android-hybrid-navigation` skill or its `hd` / `hd.py` CLI, even though it is loaded in "
-    "your environment. Do not read its SKILL.md and do not invoke it. Instead drive the emulator "
+    "`android-hybrid-navigation` or `android-raw-navigation` skills or the `hd` / `hd.py` CLI, "
+    "even though they are loaded in "
+    "your environment. Do not read their SKILL.md files and do not invoke them. Instead drive the emulator "
     "with `accessibility-cli`, which is already installed and on your PATH (source at "
     "`~/repos/accessibility-cli`); run `accessibility-cli --platform android --help` to see what "
     "it offers. Prefer it over raw screenshots for perceiving the screen."
+)
+
+# The fourth arm answers "why is the baseline literally nothing?": the bare arm keeps rederiving
+# the same efficient method (a uiautomator-dump wrapper, long input chains, one look per command)
+# unreliably — its cheap runs chained ~9 actions/look while its expensive ones drifted to visual
+# CUA (145 screenshots, 239k perception tokens on one seal cell). `raw` hands it that method as
+# prose plus a 30-line wrapper (`skills/android-raw-navigation/SKILL.md`) and nothing else — no
+# framework adaptation, no caching, no verification — so hybrid-vs-raw isolates what hd's
+# machinery buys over the method alone, and raw-vs-bare prices the rederivation.
+ARM_RAW = (
+    "IMPORTANT — tooling constraint for this run: you must NOT use the "
+    "`android-hybrid-navigation` skill or its `hd` / `hd.py` CLI, even though it is loaded in "
+    "your environment. Do not read its SKILL.md and do not invoke it. Instead read the "
+    "`android-raw-navigation` skill's SKILL.md and drive the emulator the way it describes."
 )
 
 PREAMBLE = """Boot the Android emulator on this machine by running `~/start-emulator.sh` (it takes a
@@ -616,7 +632,7 @@ Do not create any pull request. Do not modify any repository. This is a device-d
 """
 
 
-ARMS = {"hybrid": ARM_HYBRID, "bare": ARM_BARE, "acli": ARM_ACLI}
+ARMS = {"hybrid": ARM_HYBRID, "bare": ARM_BARE, "acli": ARM_ACLI, "raw": ARM_RAW}
 
 
 def build_prompt(app_key: str, arm: str) -> str:
