@@ -118,11 +118,13 @@ else:
 # One sentence per arm, so a run of a subset of the matrix does not describe arms it never ran.
 ARM_DESC = {
     "hybrid": "hybrid was told only to use whatever tooling it has",
-    "bare": "bare was forbidden the skill",
+    "bare": "bare was forbidden both skills",
     "acli": "acli was forbidden the skill and pointed at the prebuilt `accessibility-cli` binary",
+    "raw": ("raw was forbidden `android-hybrid-navigation` and told to read "
+            "`android-raw-navigation`'s SKILL.md instead"),
 }
 TITLE = {"hybrid": "android-hybrid-navigation", "bare": "unguided agent",
-         "acli": "accessibility-cli"}
+         "acli": "accessibility-cli", "raw": "the raw method"}
 
 
 def worst(arm, field):
@@ -220,17 +222,20 @@ def diff_outcome_section():
         + ", ".join(f"{k} ({v['whole']} whole / {v['delta'] + v['nochange']} delta)"
                     for k, v in worst) + ".",
         "",
-        "Mechanism: every rendered line ends in the node's centre `(x,y)`, and the diff matched "
-        "lines whole, so a list scrolled by one row scored all 40 rows as removed AND re-added "
-        "— a delta twice the size of the tree, which `see` then correctly discarded for the "
-        "tree. It is the scrolling apps that pay: Amaze and Seal, whose suites page through "
-        "file and download lists, printed the whole tree on 91-183 re-observations each, while "
-        "Joplin's form-driven suite printed 2-29. "
-        "`evals/bench_scroll_diff.py` is the bench for the fix (match on the line without its "
-        "index or coordinates, report a row that only moved as one `~ [was]->[now] (x,y)` "
-        "line): 22% fewer characters per re-observation over the six apps' scroll cases, and "
-        "whole-tree fallbacks 6/24 -> 1/24, with the screen-turnover and stale-baseline "
-        "fallbacks intact.",
+        "Mechanism, measured on the emulator against the revision under test: the delta already "
+        "reports a scrolled row as one `~ [was]->[now] (x,y)` line, but it re-prints every "
+        "REMOVED node in full — class, id, flags, coordinates — to say it is gone. Closing "
+        "Amaze's drawer removes 28 nodes and changes nothing else, and cost 2,482 characters of "
+        "delta against a 2,313-character tree, so `see` correctly discarded the delta and "
+        "printed the whole tree: the expensive outcome, reached by describing lines the caller "
+        "was already holding. The same walk pays it again on the way in, where inserting rows "
+        "renumbers 39 unmoved nodes into 39 separate `~` lines. Naming a removal by the index "
+        "the caller read it under (`- [12] \"Sort by\"`) and collapsing a contiguous "
+        "constant-shift renumbering into one `~ [a-b]->[c-d]` line cuts that drawer "
+        "re-observation 2,482 -> 310 characters. `evals/bench_delta_shape.py` is the bench: 18% "
+        "fewer characters per re-observation over markor/amaze/seal's menu and drawer cases, "
+        "whole-tree fallbacks 9/18 -> 8/18, with the screen-turnover fallback intact and every "
+        "printed index checked against the tree the caller actually read.",
     ])
 
 
@@ -422,9 +427,9 @@ def label_resolution_section():
            f"{resolving['hybrid']} of the hybrid arm's {pure['hybrid']} look-only commands, in "
            f"{len(cells['hybrid'])}/{len(A['hybrid'])} runs, were followed by nothing but "
            "`hd tap <index>` \u2014 a turn spent numbering a target the agent could already "
-           f"name. The acli arm never paid it: it acts on a selector "
-           f"({selector['acli']} `--click`/`--type` invocations) and lets its tool resolve the "
-           f"label. `hd tap \"PAT\"` is hd's form of that and was typed on "
+           "name. The other arms never pay it, because they tap coordinates the tree already "
+           "printed and never index anything. "
+           f"`hd tap \"PAT\"` is hd's form of acting by name and was typed on "
            f"{by_name['hybrid']} of the hybrid arm's {taps['hybrid']} taps "
            f"({by_name['hybrid'] / max(taps['hybrid'], 1):.0%}) — documented but under-typed, so "
            "hd names it itself after a look that bought nothing but an index "
@@ -464,9 +469,32 @@ ACTION = re.compile(r"\bhd\s+(?:tap|tap-xy|swipe|swipe-xy|type|key|longpress)\b|
                     r"adb\s+shell\s+input\s+\w+|--adb-(?:tap|text|key|swipe)\b")
 # Any way an arm can look at the screen: the skill's verbs, accessibility-cli, a screenshot, or
 # the wrapper a bare agent wrote for itself (`./ui.sh`, `python3 ui.py`, `uiautomator dump`).
+# An interpreter invocation names the wrapper by path, and the path the agents actually type is
+# `~/ui.py` — a `~` (or a `$HOME`) that `[\w./]*` does not match. That dropped 96% of the raw
+# arm's looks in this run (`seal|raw|1`: 4 counted of 105 real), which does not merely undercount
+# them: looks/task, actions-per-look and perception-tokens-per-look are all divided by this
+# number, so the arm that wraps its tool in a home-directory script reads as if it never looked.
+WRAPPER_PATH = r"(?:[~$]|\./)?[\w./${}-]*\.(?:sh|py)"
 LOOK = re.compile(r"\bhd\s+(?:see|find|shot)\b|accessibility-cli|\b[A-Za-z_][\w./-]*\s+--llm|"
-                  r"\./\w+\.(?:sh|py)\b|\bpython3?\s+[\w./]*\.py\b|uiautomator\s+dump|screencap")
+                  rf"(?:^|[;&|]\s*){WRAPPER_PATH}\b|"
+                  rf"\b(?:python3?|bash|sh|source)\s+{WRAPPER_PATH}\b|"
+                  r"uiautomator\s+dump|screencap")
 AUTHORING = re.compile(r"cat\s*>\s*|tee\s+[~/\w.-]+|<<\s*'?EOF|chmod\s+\+x")
+# Scripts on the box that are not observations: booting the emulator is not looking at it.
+NOT_A_LOOK = re.compile(r"start-emulator\.sh|boot[\w-]*\.sh")
+SEGMENT = re.compile(r"[;&|]{1,2}")
+
+
+def is_look(cmd):
+    """Whether a shell command observed the screen.
+
+    Judged per segment, because the commands the arms actually type are chains: authoring the
+    wrapper (`cat > ~/ui.py <<EOF`) names the same path as invoking it, and booting the emulator
+    names a script that is not an observation at all. Matching the whole command would count
+    both as looks.
+    """
+    return any(LOOK.search(seg) and not AUTHORING.search(seg) and not NOT_A_LOOK.search(seg)
+               for seg in SEGMENT.split(cmd))
 
 
 def slope(xs, ys):
@@ -493,11 +521,11 @@ def gap_section():
             cs = cmds.get(f"{r['app']}|{a}|{r['rep']}", [])
             if not cs:
                 continue
-            looks = sum(1 for c in cs if LOOK.search(c))
+            looks = sum(1 for c in cs if is_look(c))
             acts = sum(len(ACTION.findall(c)) for c in cs)
             # Acting without looking first is the whole of the cheaper arm's edge, so count the
             # commands that fire two or more actions with no observation attached.
-            blind = sum(1 for c in cs if len(ACTION.findall(c)) >= 2 and not LOOK.search(c))
+            blind = sum(1 for c in cs if len(ACTION.findall(c)) >= 2 and not is_look(c))
             head = list(itertools.takewhile(lambda c: not ACTION.search(c), cs))
             acc["looks/task"].append(looks / max(r["n_done"], 1))
             acc["actions per look"].append(acts / max(looks, 1))
@@ -521,7 +549,7 @@ def gap_section():
         out.append(f"| {label} |" + "".join(" " + fmt.format(per[a][label]) + " |" for a in ARMS))
     pts = [(r, cmds.get(f"{r['app']}|{r['arm']}|{r['rep']}", [])) for r in rows
            if r["arm"] in (BASELINE, ARMS[0])]
-    pts = [(sum(1 for c in cs if LOOK.search(c)) / max(r["n_done"], 1),
+    pts = [(sum(1 for c in cs if is_look(c)) / max(r["n_done"], 1),
             r["acu"] / max(r["n_done"], 1)) for r, cs in pts if cs]
     k = slope([x for x, _ in pts], [y for _, y in pts])
     d = per[ARMS[0]]["looks/task"] - per[BASELINE]["looks/task"]
@@ -585,6 +613,87 @@ def acli_section():
     for verb, c in n.most_common():
         out.append(f"| `accessibility-cli {verb}` | {c:,} | {c / tot:.0%} |")
     return "\n".join(out)
+
+
+RAW_WRAPPER = re.compile(r"uiautomator\s+dump|\bui\.py\b|\bui\.sh\b|window_dump", re.I)
+HD_CALL = re.compile(r"\bhd(?:\.py)?\b")
+
+
+def raw_section():
+    """Did the raw arm drive with the method it was handed, and did it stay off `hd`?
+
+    Same adoption question the acli arm kept failing: an arm named after a method nobody typed
+    measures the agent's fallback. Contamination is the mirror image — a raw cell that reached
+    for `hd` is a hybrid cell with a different label — and both have to be counted before the
+    raw ratios mean anything.
+    """
+    cmds = commands()
+    if cmds is None or "raw" not in ARMS:
+        return ""
+    used, contaminated, first = {}, {}, {}
+    for k, cs in cmds.items():
+        if k.split("|")[1] != "raw":
+            continue
+        hits = [i for i, c in enumerate(cs) if RAW_WRAPPER.search(c)]
+        used[k] = len(hits)
+        first[k] = hits[0] if hits else None
+        contaminated[k] = sum(1 for c in cs if HD_CALL.search(c))
+    if not used:
+        return ""
+    silent = sorted(k for k, n in used.items() if not n)
+    dirty = sorted(k for k, n in contaminated.items() if n)
+    out = ["", "### Did the raw arm use the method it was handed?", "",
+           f"{sum(1 for n in used.values() if n)}/{len(used)} raw runs drove the emulator with "
+           "the wrapper (`python3 ~/ui.py see`, `uiautomator dump`), "
+           f"{sum(used.values()):,} invocations in total, first used at command "
+           f"{min(v for v in first.values() if v is not None)}-"
+           f"{max(v for v in first.values() if v is not None)} of the run. "
+           f"{len(dirty)}/{len(used)} runs invoked `hd` (contamination)."
+           + (f" Never typed the method: {', '.join(silent)}." if silent else "")
+           + (f" Contaminated: {', '.join(dirty)}." if dirty else ""), "",
+           "| cell | wrapper invocations | first at command | `hd` invocations |",
+           "|---|---:|---:|---:|"]
+    for k in sorted(used):
+        out.append(f"| {k.replace('|', chr(92) + '|')} | {used[k]} | "
+                   f"{first[k] if first[k] is not None else '—'} | {contaminated[k]} |")
+    out += ["", "A cell that never typed the method, or that reached for `hd`, measures "
+                "something other than the arm it is labelled as and must be dropped before any "
+                "raw ratio is quoted."]
+    return "\n".join(out)
+
+
+def bare_rederivation_section():
+    """How much of the raw arm's edge is a method the bare arm would have written anyway.
+
+    `raw` exists to price the rederivation the bare arm does unreliably, so the count that
+    matters is how many bare cells wrote the wrapper themselves, and how early.
+    """
+    cmds = commands()
+    if cmds is None or BASELINE not in ARMS:
+        return ""
+    wrote, first = {}, {}
+    for k, cs in cmds.items():
+        if k.split("|")[1] != BASELINE:
+            continue
+        hits = [i for i, c in enumerate(cs) if RAW_WRAPPER.search(c)]
+        wrote[k] = len(hits)
+        first[k] = hits[0] if hits else None
+    if not wrote:
+        return ""
+    n = sum(1 for v in wrote.values() if v)
+    turns = [first[k] for k in wrote if first[k] is not None]
+    return "\n".join([
+        "", f"### Did the {BASELINE} arm rederive the method?", "",
+        f"{n}/{len(wrote)} {BASELINE} runs wrote or ran a tree-dump wrapper of their own"
+        + (f", first at command {min(turns)}-{max(turns)}" if turns else "")
+        + ". Cells: "
+        + ", ".join(f"{k} ({v})" for k, v in sorted(wrote.items()) if v) + "."
+        if n else
+        f"**No {BASELINE} run wrote a tree-dump wrapper.** The rederivation the raw arm is meant "
+        "to price did not happen in this run at all.",
+        "", "This is the quantity `raw` vs. `" + BASELINE + "` prices: where the bare arm did "
+        "rederive the method, the two arms should converge; where it did not, the gap is the "
+        "method itself."])
 
 
 def capture_rates():
@@ -655,6 +764,8 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {focus_hunt_section()}
 {label_resolution_section()}
 {acli_section()}
+{raw_section()}
+{bare_rederivation_section()}
 
 ## Method notes
 
@@ -670,4 +781,10 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
   loop the agent wrote is one event, so counts are a floor, and they are a lower floor for the
   arm that wrapped its tool.
 - Raw data: `runs.json` (cell -> session), `metrics.json`, `tasks.json`, `bypass.json`.
+- Dump validity: the preflight `evals/test_dumps.py` reported no `problems` for any of the six
+  apps, but several apps' dump commands exited non-zero (the command reads app files that do not
+  exist in a freshly installed app). The script does not fail on that, so the playbook's "rc=0
+  for every app" condition was NOT strictly met; the per-app trees themselves dumped and the
+  final state dumps graded cleanly, so the matrix stands, but this is a weaker preflight than
+  the procedure asks for and `test_dumps.py` should be made to exit non-zero on it.
 """)

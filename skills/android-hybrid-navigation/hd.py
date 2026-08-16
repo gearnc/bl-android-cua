@@ -308,6 +308,52 @@ def move_line(old, new):
     return f"~ [{oi}]->[{ni}] {coords(new)}" if oi != ni else f"~ [{ni}] {coords(new)}"
 
 
+LABEL_IN_LINE = re.compile(r'^\s*\[\d+\]\s+\S+\s+("(?:[^"\\]|\\.){0,40}")')
+
+
+def gone_line(line):
+    """A node that is no longer on screen, named by the index the caller read it under.
+
+    The same argument `move_line` already makes for renumbering: the caller is holding the full
+    line, so re-printing its class, id, flags and coordinates to say it is gone spends the whole
+    node again to deliver one bit. Closing a menu removed 28 nodes and printed 2,482 characters
+    of delta against a 2,313-character tree, so `see` discarded the delta and printed the tree —
+    the expensive outcome, reached by describing what the caller already had.
+    """
+    m = LABEL_IN_LINE.match(line)
+    label = m.group(1) if m else ""
+    return f"- [{node_index(line)}]" + (f" {label}" if label else "")
+
+
+MIN_RUN = 3
+
+
+def collapse_moves(moved):
+    """Renumberings, with contiguous constant-shift runs printed as one line.
+
+    Inserting a row above a list renumbers every row below it by the same offset, which is one
+    fact, not forty. A run is collapsed only when the indexes are contiguous, the shift is
+    constant and no node moved on screen — so every index the caller might tap is still derivable
+    from the line, and anything that genuinely moved is still printed per node.
+    """
+    items = sorted(((int(node_index(o)), int(node_index(n)), coords(o) == coords(n), o, n)
+                    for o, n in moved), key=lambda t: t[0])
+    out, i = [], 0
+    while i < len(items):
+        j = i
+        shift, still = items[i][1] - items[i][0], items[i][2]
+        while (j + 1 < len(items) and items[j + 1][0] == items[j][0] + 1
+               and items[j + 1][1] - items[j + 1][0] == shift and items[j + 1][2] == still):
+            j += 1
+        if still and shift and j - i + 1 >= MIN_RUN:
+            out.append(f"~ [{items[i][0]}-{items[j][0]}]->[{items[i][1]}-{items[j][1]}] "
+                       "(same place, renumbered)")
+        else:
+            out += [move_line(o, n) for _, _, _, o, n in items[i:j + 1]]
+        i = j + 1
+    return out
+
+
 def diff_lines(old, new):
     """(added lines with their current indexes, removed lines, (old, new) pairs that moved).
 
@@ -419,8 +465,8 @@ def see(full=False, find=None, diff=True, quiet=False):
     # reports every layout container as removed, which is noise, not a change.
     if diff and not find and base and base.get("lines"):
         added, removed, moved = diff_lines(base["lines"], lines)
-        out = ([f"+ {l}" for l in added] + [f"- {l}" for l in removed]
-               + [move_line(o, n) for o, n in moved])
+        out = ([f"+ {l}" for l in added] + [gone_line(l) for l in removed]
+               + collapse_moves(moved))
         # Emit whichever is genuinely cheaper. On a screen that turned over, the delta is the
         # old tree plus the new one, so a diff would be the more expensive way to say it.
         if len("\n".join(out)) < len("\n".join(lines)):
@@ -434,6 +480,10 @@ def see(full=False, find=None, diff=True, quiet=False):
             moves = f" ~{len(moved)}" if moved else ""
             legend = ("; `~ [was]->[now] (x,y)` is a node you have read, renumbered"
                       if moved else "")
+            # A removal is named by the index it had in the tree the caller read, the same way a
+            # renumbering names its `[was]` — the line itself is already in their context.
+            if removed:
+                legend += "; `- [i]` is that tree's index, now gone"
             print(f"# screen {size[0]}x{size[1]}, +{len(added)} -{len(removed)}{moves} "
                   f"of {len(shown)} nodes (diff vs last see, profile={profile}{legend}; "
                   f"unlisted nodes are unchanged and keep their indexes)")

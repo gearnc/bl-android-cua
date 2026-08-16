@@ -1,0 +1,62 @@
+{
+ "markor|hybrid|1": {
+  "whole": 61,
+  "delta": 25,
+  "nochange": 8
+ },
+ "markor|hybrid|2": {
+  "whole": 47,
+  "delta": 18,
+  "nochange": 3
+ },
+ "amaze|hybrid|1": {
+  "whole": 57,
+  "delta": 9,
+  "nochange": 4
+ },
+ "amaze|hybrid|2": {
+  "whole": 63,
+  "delta": 5,
+  "nochange": 0
+ },
+ "seal|hybrid|1": {
+  "whole": 45,
+  "delta": 12,
+  "nochange": 2
+ },
+ "seal|hybrid|2": {
+  "whole": 50,
+  "delta": 19,
+  "nochange": 7
+ },
+ "unitto|hybrid|1": {
+  "whole": 20,
+  "delta": 7,
+  "nochange": 0
+ },
+ "unitto|hybrid|2": {
+  "whole": 30,
+  "delta": 23,
+  "nochange": 5
+ },
+ "joplin|hybrid|1": {
+  "whole": 9,
+  "delta": 12,
+  "nochange": 2
+ },
+ "joplin|hybrid|2": {
+  "whole": 16,
+  "delta": 10,
+  "nochange": 1
+ },
+ "lesspass|hybrid|1": {
+  "whole": 5,
+  "delta": 10,
+  "nochange": 1
+ },
+ "lesspass|hybrid|2": {
+  "whole": 10,
+  "delta": 8,
+  "nochange": 3
+ }
+}
