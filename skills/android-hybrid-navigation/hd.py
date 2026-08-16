@@ -43,6 +43,19 @@ Verbs:
                          what you want on every action of a batch except the last:
                          `hd tap 5 -n; hd tap 9 -n; hd tap 3` is one turn and one tree.
                          The look is what costs turns, not tokens.
+  hd run 'STEP; STEP; …'  execute a WHOLE FLOW in one command and one final look. Steps are hd
+                         action verbs separated by `;` (or newlines): tap "PAT", tap-xy, longpress,
+                         type, clear, key, swipe, wait-idle. hd re-reads the tree between steps
+                         itself, silently, so a label typed for step 3 resolves against the screen
+                         step 2 produced — the re-looks that cost a turn each when typed by hand
+                         happen inside one process and print nothing. Only the LAST step's screen
+                         is printed (narrow it with --find PAT, or -n for none). A step that fails
+                         stops the batch, says which steps ran, and prints the current tree so
+                         recovery costs no extra look. Index taps are only valid as the FIRST
+                         step (later indexes would address a tree you have not seen); name later
+                         targets by pattern.
+                         `hd run 'tap "Compose"; type "hi"; tap "Send"'` is three turns' work in
+                         one turn and one tree.
   hd tap <index>         tap center of node <index> from the LAST `see` (re-verifies first)
   hd tap "PAT"           tap the node whose line matches regex PAT — no look needed to turn a
                          label you already know into an index. Observes the screen itself if the
@@ -652,6 +665,18 @@ def screen_size():
     m = re.search(r"Override size:\s*(\d+)x(\d+)", out) or re.search(r"Physical size:\s*(\d+)x(\d+)", out)
     return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
 
+def do_swipe(d, steps=300):
+    # Scale to the real display: fixed 1080x2400 coordinates fall off the bottom of any
+    # shorter screen, where the swipe silently does nothing.
+    w, h = screen_size()
+    lo_y, hi_y = int(h * 0.30), int(h * 0.70)
+    lo_x, hi_x = int(w * 0.20), int(w * 0.80)
+    coords = {"up": (w // 2, hi_y, w // 2, lo_y), "down": (w // 2, lo_y, w // 2, hi_y),
+              "left": (hi_x, h // 2, lo_x, h // 2), "right": (lo_x, h // 2, hi_x, h // 2)}[d]
+    sh("shell", "input", "swipe", *map(str, coords), str(steps))
+    print(f"swiped {d}")
+
+
 def wait_idle(timeout=5.0):
     """Block until the focused window stops changing, or `timeout`. Prints nothing."""
     end = time.time() + timeout
@@ -666,6 +691,126 @@ def wait_idle(timeout=5.0):
 
 
 ACTIONS = {"tap", "tap-xy", "longpress", "longpress-xy", "type", "key", "swipe", "clear"}
+RUNNABLE = ACTIONS | {"wait-idle"}
+
+
+def refresh_quiet():
+    """Re-cache the tree without printing anything — the between-step look of a batch.
+
+    Caches the COMPACT rendering, i.e. exactly what the caller's own `see` would have shown,
+    not the full one `-q` captures for `hd find` recall: the caller named its steps off compact
+    trees, and a full tree carries adopted-label duplicates a compact one never shows (Unitto
+    renders three clickable near:"Clear" rows in full where compact shows one), turning a
+    pattern that was unambiguous on every screen the caller read into an ambiguity failure.
+    """
+    nodes, size = parse(dump_xml())
+    profile, _ = detect_profile(nodes)
+    shown, lines = render(nodes, False, profile)
+    if len(shown) < COMPACT_MIN_NODES:
+        shown, lines = render(nodes, True, profile)
+    st = json.load(open(STATE)) if os.path.exists(STATE) else {}
+    json.dump({"nodes": shown, "ts": time.time(), "lines": lines, "mode": "compact",
+               "size": list(size), "profile": profile,
+               "baselines": st.get("baselines", {}),
+               "informative": informative_mask(shown)}, open(STATE, "w"))
+
+
+def parse_steps(spec):
+    """Validate the whole batch BEFORE touching the device, so a typo in step 4 costs nothing.
+
+    An index tap is a fact about the tree the caller last read, which only step 1 still acts
+    on; every later step runs against a screen the caller has not seen, so its targets must be
+    names hd can resolve fresh (patterns, coordinates, the focused field).
+    """
+    steps = []
+    for raw in re.split(r"[;\n]", spec):
+        raw = raw.strip()
+        if raw:
+            args = shlex.split(raw)
+            if args[0] == "hd":
+                args = args[1:]
+            steps.append((raw, args))
+    if not steps:
+        sys.exit("hd run: empty batch — quote the steps: hd run 'tap \"Save\"; key back'")
+    for i, (raw, args) in enumerate(steps, 1):
+        if args[0] not in RUNNABLE:
+            sys.exit(f"hd run: step {i} ({raw!r}) — {args[0]!r} is not a batchable verb "
+                     f"({', '.join(sorted(RUNNABLE))})")
+        if i > 1 and args[0] in ("tap", "longpress") and len(args) > 1 and args[1].isdigit():
+            sys.exit(f"hd run: step {i} ({raw!r}) — an index addresses the tree you LAST read, "
+                     "which step 1 already changed; name the target by pattern instead "
+                     f'(tap "…")')
+    return steps
+
+
+def run_step(args, first):
+    cmd = args[0]
+    if cmd in ("tap", "longpress"):
+        long = cmd == "longpress"
+        if args[1].isdigit() and first:
+            tap(int(args[1]), long=long)
+        else:
+            tap_pattern(args[1], long=long)
+    elif cmd == "tap-xy":
+        sh("shell", "input", "tap", args[1], args[2])
+        print(f"tapped ({args[1]},{args[2]})")
+    elif cmd == "longpress-xy":
+        sh("shell", "input", "swipe", args[1], args[2], args[1], args[2], "800")
+        print(f"long-pressed ({args[1]},{args[2]})")
+    elif cmd == "type":
+        if "-r" in args[2:] or "--replace" in args[2:]:
+            print(f"cleared {clear_focused()!r}")
+        sh("shell", "input", "text", shlex.quote(args[1].replace(" ", "%s")))
+        print(f"typed {args[1]!r}")
+    elif cmd == "clear":
+        print(f"cleared {clear_focused()!r}")
+    elif cmd == "key":
+        sh("shell", "input", "keyevent", KEYS.get(args[1], args[1]))
+        print(f"key {args[1]}")
+    elif cmd == "swipe":
+        do_swipe(args[1])
+    elif cmd == "wait-idle":
+        timeout = float(args[args.index("--timeout") + 1]) if "--timeout" in args else 5.0
+        print("idle" if wait_idle(timeout) else "timeout (proceeding)")
+
+
+def run_batch(spec, find=None, observe=True):
+    """Execute a step list in ONE process with ONE final observation.
+
+    Turn compression, not byte compression: across ten archived A/B/C runs the hybrid arm's ACU
+    sits at ~1.08x bare while its perception tokens sit at ~0.8x, because billed input is the
+    resident context integrated over TURNS (`evals/billed.py`) and hybrid buys more of them —
+    ~3.3 looks per task against bare's ~2.2, largely one action per command. The per-look byte
+    savers (`--fold`, deltas, `find`, `tap "PAT"`) each stalled at 15-20% adoption and moved
+    the ratio not at all. What bare does instead is write a shell loop: many actions, one
+    process, one read. `hd run` is that loop with hd's verification kept: between steps it
+    re-reads the tree silently so patterns resolve against the CURRENT screen, each tap still
+    re-verifies its node, and a failed step stops the batch and prints the screen so recovery
+    starts from a look already paid for.
+    """
+    steps = parse_steps(spec)
+    for i, (raw, args) in enumerate(steps, 1):
+        if i > 1:
+            # Settle before EVERY later step: a key sent while the previous step's screen is
+            # still animating lands on whichever window wins the race.
+            wait_idle(2.0)
+            if args[0] in ("tap", "longpress"):
+                refresh_quiet()
+        print(f"[step {i}/{len(steps)}] ", end="")
+        try:
+            run_step(args, first=(i == 1))
+        except SystemExit as e:
+            ran = f"steps 1..{i - 1} already ran" if i > 1 else "no steps ran"
+            print(f"\n# batch stopped at step {i}/{len(steps)} ({raw!r}); {ran}")
+            if e.code not in (None, 0):
+                print(e.code)
+            wait_idle(3.0)
+            see()
+            sys.exit(1)
+    if observe:
+        wait_idle(3.0)
+        print(f"# ran {len(steps)} steps in one turn — the screen they produced:")
+        see(find=find)
 
 
 def see_flag(a):
@@ -741,15 +886,10 @@ def main():
     elif cmd == "key":
         sh("shell", "input", "keyevent", KEYS.get(a[1], a[1])); print(f"key {a[1]}")
     elif cmd == "swipe":
-        d = a[1]; steps = 300
-        # Scale to the real display: fixed 1080x2400 coordinates fall off the bottom of any
-        # shorter screen, where the swipe silently does nothing.
-        w, h = screen_size()
-        lo_y, hi_y = int(h * 0.30), int(h * 0.70)
-        lo_x, hi_x = int(w * 0.20), int(w * 0.80)
-        coords = {"up": (w // 2, hi_y, w // 2, lo_y), "down": (w // 2, lo_y, w // 2, hi_y),
-                  "left": (hi_x, h // 2, lo_x, h // 2), "right": (lo_x, h // 2, hi_x, h // 2)}[d]
-        sh("shell", "input", "swipe", *map(str, coords), str(steps)); print(f"swiped {d}")
+        do_swipe(a[1])
+    elif cmd == "run":
+        find = a[a.index("--find") + 1] if "--find" in a else None
+        run_batch(a[1], find=find, observe="-n" not in a and "--no-see" not in a)
     elif cmd == "shot":
         open(a[1], "wb").write(sh("exec-out", "screencap", "-p", binary=True))
         print(f"screenshot -> {a[1]}")
@@ -760,7 +900,7 @@ def main():
         sys.exit(f"unknown verb {cmd!r}\n{__doc__}")
     if cmd in ("see", "find"):
         open(LOOKED, "w").close()
-    elif cmd in ACTIONS and os.path.exists(LOOKED):
+    elif cmd in (ACTIONS | {"run"}) and os.path.exists(LOOKED):
         os.remove(LOOKED)
     if observe:
         if not explicit:

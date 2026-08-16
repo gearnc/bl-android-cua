@@ -76,6 +76,25 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    hd tap 5 -n; hd type "Groceries" -n; hd tap 12          # one turn, one tree at the end
    ```
 
+   **When the flow crosses screens — so later indexes would be stale — run the whole flow as
+   one `hd run` batch** instead of one command per screen:
+
+   ```
+   hd run 'tap "Compose"; type "hi"; tap "Send"' --find Sent   # three screens, one turn, one tree
+   ```
+
+   Steps are the same verbs (`tap "PAT"`, `tap-xy`, `longpress`, `type`, `clear`, `key`,
+   `swipe`, `wait-idle`) separated by `;`. hd silently re-reads the tree between steps, so a
+   label named for step 3 resolves against the screen step 2 produced — the between-screen
+   looks that cost a turn each when typed by hand happen inside one process and print nothing.
+   Only the last step's screen is printed (`--find PAT` narrows it, `-n` drops it). The batch
+   validates every step before touching the device; only step 1 may use an index (later
+   indexes would address a tree you have not seen — name later targets by pattern), an
+   ambiguous name taps nothing and stops, and a failed step halts the batch, says which steps
+   ran, and prints the current tree so recovery costs no extra look. Over the six default
+   apps the same flows cost 3.2x fewer commands and 88% fewer printed bytes than one command
+   per step (`evals/test_run_batch.py`).
+
    You are billed per command, not per byte: one 8-action command that looks once is a fraction
    of the cost of 8 that look 8 times. In the 2026-08-11 A/B/C the skill printed 0.67x the
    perception tokens of an unaided agent and still cost 1.10x its ACU, purely because it looked
@@ -118,8 +137,9 @@ and that cannot shift, skip the extra looks:
   `hd type "x" -n`, and let your next action's look cover it.
 - **One verification per task, not per action**, whenever a single `see --find` (or adb check
   — `ls`, `settings get`, `content query`) can prove the whole task's end state.
-Do NOT batch across layout changes: anything that opens/closes a dialog, keyboard, menu,
-screen, or selection mode invalidates indexes and coordinates — re-observe first. If a
+Do NOT `-n`-batch across layout changes: anything that opens/closes a dialog, keyboard, menu,
+screen, or selection mode invalidates indexes and coordinates — that is `hd run`'s job, since
+it re-resolves names against the current screen between steps. If a
 batched sequence produces a surprise (`hd tap` says "node moved/gone"), stop and re-`see`.
 
 ## Framework-adaptive observation: pick the primitive by profile
