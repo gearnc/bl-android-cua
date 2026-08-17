@@ -53,7 +53,8 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    miss: `hd see --find` and `hd find` both print the tree they matched against when the
    pattern hits nothing, with the indexes `hd tap` expects, so a miss costs one look.
 2. Act: `hd tap <index>` (verifies the node is still where you saw it), `hd longpress <index>`,
-   `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down`.
+   `hd type "text"`, `hd key back|enter|...`, `hd swipe up|down` (`--until PAT` to scroll to an
+   off-screen row in one command — see "Earned shortcuts").
    **When you can already name the target, tap it by name and skip step 1 entirely**:
    `hd tap "Save"` matches the same regex `--find` does, observes the screen itself if its
    cached tree is stale, and taps the node — one turn where a look plus a tap was two.
@@ -84,7 +85,8 @@ DISPLAY_SETTINGS, TEXT_READING_SETTINGS, APPLICATION_DETAILS_SETTINGS …),
    ```
 
    Steps are the same verbs (`tap "PAT"`, `tap-xy`, `longpress`, `type`, `clear`, `key`,
-   `swipe`, `wait-idle`) separated by `;`. hd silently re-reads the tree between steps, so a
+   `swipe` incl. `swipe up --until PAT`, `wait-idle`) separated by `;`. hd silently re-reads the
+   tree between steps, so a
    label named for step 3 resolves against the screen step 2 produced — the between-screen
    looks that cost a turn each when typed by hand happen inside one process and print nothing.
    Only the last step's screen is printed (`--find PAT` narrows it, `-n` drops it). The batch
@@ -130,6 +132,15 @@ and that cannot shift, skip the extra looks:
   hd type "y"` in one step — the last action's own look verifies all four landed. Same for a
   known row of checkboxes, +/- steppers (`hd tap 9 -n; hd tap 9 -n; hd tap 9`), or dismissing a
   familiar dialog (`hd tap 3 -n`, and see it on your next action).
+- **Hunting a row below the fold is ONE command, not one look per swipe.**
+  `hd swipe up --until "Dark theme"` swipes, re-reads the tree silently, and prints only the
+  matching lines once the row is on screen, with indexes `hd tap` takes straight off. It stops
+  early when the screen stops moving (end of the list) and says so, and a miss prints the tree
+  it matched against, so it never costs two looks. `--max N` bounds the scan (default 8). It is
+  also a batch step: `hd run 'swipe up --until "Dark theme"; tap "Dark theme"'`. In the
+  2026-08-17 A/B/C the hybrid arm spent 72 commands inside 24 swipe-then-look hunts across 10 of
+  its 12 cells — every one of those looks answered nothing but "did the row arrive yet?"
+  (`evals/bench_scroll_hunt.py`).
 - **Reuse coordinates for repeated flows.** Doing the same flow the 2nd/3rd time (add another
   card, create another note): replay the taps with `hd tap-xy -n` from your notes and verify only
   the END state, not each step.
