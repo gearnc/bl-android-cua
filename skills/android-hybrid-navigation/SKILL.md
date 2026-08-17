@@ -141,6 +141,12 @@ Do NOT `-n`-batch across layout changes: anything that opens/closes a dialog, ke
 screen, or selection mode invalidates indexes and coordinates — that is `hd run`'s job, since
 it re-resolves names against the current screen between steps. If a
 batched sequence produces a surprise (`hd tap` says "node moved/gone"), stop and re-`see`.
+Three single-action commands in a row, each printing a tree, make hd print one line naming these
+two forms (at most three lines a session, `evals/test_batch_hint.py`) — in the 2026-08-16 A/B/C
+at `62de67e` hybrid chained 1.19 actions per look against the raw arm's 2.11 and took 4.24 looks
+per task against its 2.71, at a comparable price per look (429 vs 329 perception tokens), which
+is the whole of that run's hybrid/raw ACU gap. Chaining is not an optimisation here; it is what
+the arm costs.
 
 ## Framework-adaptive observation: pick the primitive by profile
 The header of every `hd see` prints the detected profile. Use a DIFFERENT default primitive

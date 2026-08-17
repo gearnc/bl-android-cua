@@ -42,7 +42,8 @@ Verbs:
                          `hd see --find Save` would print. `hd tap 5 -n` suppresses it, which is
                          what you want on every action of a batch except the last:
                          `hd tap 5 -n; hd tap 9 -n; hd tap 3` is one turn and one tree.
-                         The look is what costs turns, not tokens.
+                         The look is what costs turns, not tokens. Three single-action commands
+                         in a row, each printing a tree, print a line naming these forms.
   hd run 'STEP; STEP; …'  execute a WHOLE FLOW in one command and one final look. Steps are hd
                          action verbs separated by `;` (or newlines): tap "PAT", tap-xy, longpress,
                          type, clear, key, swipe, wait-idle. hd re-reads the tree between steps
@@ -90,6 +91,9 @@ HINTED = "/tmp/hd_hinted_no_see"
 LOOKED = "/tmp/hd_looked_only"        # last command was a standalone look; any action clears it
 HINTED_LABEL = "/tmp/hd_hinted_tap_label"
 HINTED_FIND = "/tmp/hd_hinted_see_find"
+STREAK = "/tmp/hd_action_streak"       # consecutive one-action commands that each paid for a look
+STREAK_MIN = 3          # actions in a row before the batch forms are worth a line
+STREAK_HINTS = 3        # times a session; a nudge nobody takes must stop asking
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
 DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
@@ -949,6 +953,48 @@ def hint_no_see():
     open(HINTED, "w").close()
 
 
+def hint_batch(cmd, observed):
+    """Nudge the batch forms while the caller is paying for them, not once at the top.
+
+    The 2026-08-16 A/B/C at `62de67e` priced a look at 429 perception tokens for hybrid against
+    the raw arm's 329 — packaging is no longer the gap. The gap is how OFTEN each arm looks:
+    counting the fold, hybrid chained 1.19 actions per look against raw's 2.11 and took 4.24
+    looks per task against raw's 2.71, for 0.57 ACU per task against 0.42.
+
+    `-n` and `hd run` already exist and SKILL.md leads with both; the once-a-session
+    `hint_no_see` line and the documentation moved that ratio to 1.19 and no further.
+    So the reminder fires where the behaviour is: after the STREAK_MIN'th single-action command
+    in a row that each printed a tree nobody asked for. Streak counting ignores actions that
+    already opted out (`-n`) and resets on `hd run` and on a standalone look, so an agent that
+    batches never sees it; STREAK_HINTS caps the session at three lines against the ~300-token
+    looks they are trying to remove.
+    """
+    if cmd == "run" or not observed:
+        write_marker(STREAK, f"0 {streak_state()[1]}")
+        return
+    n, fired = streak_state()
+    n += 1
+    if n >= STREAK_MIN and fired < STREAK_HINTS:
+        print(f"# ({n} single-action commands in a row, {n} trees: `hd tap 5 -n; hd type \"x\" -n; "
+              f"hd tap 9` is one turn and one tree while indexes hold, and "
+              f"`hd run 'tap \"A\"; type \"x\"; tap \"Save\"'` is one turn across screens)")
+        n, fired = 0, fired + 1
+    write_marker(STREAK, f"{n} {fired}")
+
+
+def streak_state():
+    try:
+        n, fired = open(STREAK).read().split()
+        return int(n), int(fired)
+    except (OSError, ValueError):
+        return 0, 0
+
+
+def write_marker(path, text):
+    with open(path, "w") as f:
+        f.write(text)
+
+
 def main():
     a = sys.argv[1:]
     if not a:
@@ -1001,8 +1047,11 @@ def main():
         sys.exit(f"unknown verb {cmd!r}\n{__doc__}")
     if cmd in ("see", "find"):
         open(LOOKED, "w").close()
-    elif cmd in (ACTIONS | {"run"}) and os.path.exists(LOOKED):
-        os.remove(LOOKED)
+        write_marker(STREAK, "0 %d" % streak_state()[1])
+    elif cmd in (ACTIONS | {"run"}):
+        if os.path.exists(LOOKED):
+            os.remove(LOOKED)
+        hint_batch(cmd, observe)
     if observe:
         if not explicit:
             hint_no_see()
