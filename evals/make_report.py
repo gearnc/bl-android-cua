@@ -630,6 +630,55 @@ RAW_WRAPPER = re.compile(r"uiautomator\s+dump|\bui\.py\b|\bui\.sh\b|window_dump"
 HD_CALL = re.compile(r"\bhd(?:\.py)?\b")
 
 
+SWIPE = re.compile(r"\bhd(?:\.py)?\s+swipe\b|input\s+swipe\b|\bswipe\s+(?:up|down|left|right)\b")
+# Acting on something ends a hunt: the run found what it was scrolling for (or gave up on it).
+# A swipe is not that action — scrolling is how the hunt moves — so it is excluded here.
+ACTED_ELSE = re.compile(r"\bhd(?:\.py)?\s+(?:tap|tap-xy|longpress|longpress-xy|type|clear|key|"
+                        r"run)\b|input\s+(?:tap|text|keyevent|draganddrop)\b")
+
+
+def hunt_section():
+    """Turns spent scrolling towards a row and looking to find out whether it arrived yet.
+
+    A target below the fold is not one look away, it is one look per swipe. The signature is a
+    stretch of consecutive commands that only swipe and look, with at least two swipes in it:
+    nothing is being acted on, the run is hunting. Each of those looks answers one yes/no
+    question and is then re-read in every later turn's resident context, which is what makes it
+    an ACU line item rather than a byte one.
+    """
+    cmds = commands()
+    if cmds is None:
+        return ""
+    turns, hunts, cells = collections.Counter(), collections.Counter(), collections.defaultdict(set)
+    for k, cs in cmds.items():
+        arm = k.split("|")[1]
+        run = []
+        for c in list(cs) + [""]:
+            swiping = bool(SWIPE.search(c))
+            if c and (swiping or is_look(c)) and not ACTED_ELSE.search(c):
+                run.append(swiping)
+                continue
+            if sum(run) >= 2:
+                turns[arm] += len(run)
+                hunts[arm] += 1
+                cells[arm].add(k)
+            run = []
+    if not sum(hunts.values()):
+        return ""
+    out = ["", "### Turns spent hunting a row below the fold", "",
+           "| | " + " | ".join(ARMS) + " |", "|---|" + "---:|" * len(ARMS),
+           "| multi-swipe hunts |" + "".join(f" {hunts[a]} |" for a in ARMS),
+           "| commands inside them |" + "".join(f" {turns[a]} |" for a in ARMS),
+           "| runs doing it |" + "".join(f" {len(cells[a])}/{len(A[a])} |" for a in ARMS), "",
+           f"The hybrid arm spent {turns['hybrid']} commands inside {hunts['hybrid']} "
+           f"swipe-then-look hunts across {len(cells['hybrid'])}/{len(A['hybrid'])} of its runs. "
+           "Every look in one of them answers nothing but \u201cdid the row arrive yet?\u201d, so "
+           "`hd swipe <dir> --until PAT` runs the loop inside one process — swipe, re-cache "
+           "silently, print only the lines that answer — and stops early at the end of the list "
+           "(`evals/bench_scroll_hunt.py`)."]
+    return "\n".join(out)
+
+
 def raw_section():
     """Did the raw arm drive with the method it was handed, and did it stay off `hd`?
 
@@ -774,6 +823,7 @@ Worst run by perception tokens — {', '.join(f"{a} {worst(a, 'perception_tokens
 {field_edit_section()}
 {focus_hunt_section()}
 {label_resolution_section()}
+{hunt_section()}
 {acli_section()}
 {raw_section()}
 {bare_rederivation_section()}

@@ -77,6 +77,10 @@ Verbs:
   hd clear               same deletion without typing anything
   hd key <name>          back|home|enter|tab|delete or raw keycode number
   hd swipe up|down|left|right [--steps N]
+  hd swipe up --until "PAT" [--max N]  scroll until PAT is on screen, then print the matching
+                         lines with their (current) indexes — the whole hunt for an off-screen
+                         row in ONE turn instead of one look per swipe. Stops early when the
+                         screen stops moving (end of the list) and says so.
   hd shot <file.png>     screenshot to file
   hd wait-idle [--timeout S]
 State file: /tmp/hd_last_tree.json (indexes are only valid against the last `see`).
@@ -95,6 +99,7 @@ STREAK = "/tmp/hd_action_streak"       # consecutive one-action commands that ea
 STREAK_MIN = 3          # actions in a row before the batch forms are worth a line
 STREAK_HINTS = 3        # times a session; a nudge nobody takes must stop asking
 COMPACT_MIN_NODES = 5  # F7: auto-escalate below this
+SCROLL_MAX = 8         # swipes `--until` will spend before giving the screen back
 DIFF_MAX_AGE = 120     # seconds; past this the previous tree is not a trustworthy baseline
 
 def foreground_pkg():
@@ -770,7 +775,7 @@ def screen_size():
     m = re.search(r"Override size:\s*(\d+)x(\d+)", out) or re.search(r"Physical size:\s*(\d+)x(\d+)", out)
     return (int(m.group(1)), int(m.group(2))) if m else (1080, 2400)
 
-def do_swipe(d, steps=300):
+def do_swipe(d, steps=300, announce=True):
     # Scale to the real display: fixed 1080x2400 coordinates fall off the bottom of any
     # shorter screen, where the swipe silently does nothing.
     w, h = screen_size()
@@ -779,7 +784,8 @@ def do_swipe(d, steps=300):
     coords = {"up": (w // 2, hi_y, w // 2, lo_y), "down": (w // 2, lo_y, w // 2, hi_y),
               "left": (hi_x, h // 2, lo_x, h // 2), "right": (lo_x, h // 2, hi_x, h // 2)}[d]
     sh("shell", "input", "swipe", *map(str, coords), str(steps))
-    print(f"swiped {d}")
+    if announce:
+        print(f"swiped {d}")
 
 
 def wait_idle(timeout=5.0):
@@ -818,6 +824,57 @@ def refresh_quiet():
                "size": list(size), "profile": profile,
                "baselines": st.get("baselines", {}),
                "informative": informative_mask(shown)}, open(STATE, "w"))
+    return shown, lines
+
+
+def swipe_until(d, pat, limit=SCROLL_MAX, steps=300, quiet=False):
+    """Scroll toward a target and stop on it: the whole hunt in one turn, one tree.
+
+    A target below the fold is not one look away, it is one look per swipe: the caller swipes,
+    reads a tree to find out whether the row arrived, and swipes again. In the 2026-08-17 A/B/C
+    the hybrid arm spent 72 commands in 24 such hunts across 10 of its 12 cells, each turn buying a
+    tree it only read to decide whether to scroll once more — turns are what ACU tracks, so the
+    hunt is charged again in every later turn's resident context.
+
+    hd can run that loop itself: swipe, re-cache silently, test the pattern, and print only the
+    tree that answers. The scan stops early when the screen stops moving, because a list that
+    did not change is at its end and the remaining swipes would each cost a dump for nothing.
+    Indexes printed are the current ones (the cache is this scan's last dump), so `hd tap` off
+    them needs no further look.
+
+    As a batch step (`quiet`) it is a between-step look like any other: one line when it lands,
+    and a miss stops the batch through the batch's own recovery path rather than printing a
+    tree the batch is about to print again.
+    """
+    rx = re.compile(pat, re.I)
+    prev = None
+    for i in range(limit + 1):
+        shown, lines = refresh_quiet()
+        hits = [ln for ln in lines if rx.search(ln)]
+        if hits:
+            print(f"# found {pat!r} after {i} swipe(s), {len(hits)}/{len(shown)} nodes match")
+            if not quiet:
+                print("\n".join(hits))
+            return True
+        if lines == prev:
+            why = (f"{pat!r} not found; the screen stopped moving after {i} swipe(s) "
+                   f"— this is the end of the list")
+            break
+        prev = lines
+        if i < limit:
+            do_swipe(d, steps, announce=False)
+            wait_idle(1.5)
+    else:
+        why = f"{pat!r} not found in {limit} swipes {d} — raise --max, or scroll the other way"
+    if quiet:
+        sys.exit(f"swipe --until: {why}")
+    print(f"# {why}")
+    print_short(lines, informative_mask(shown), "NO MATCH")
+    return False
+
+
+def until_limit(args):
+    return int(args[args.index("--max") + 1]) if "--max" in args else SCROLL_MAX
 
 
 def parse_steps(spec):
@@ -873,7 +930,12 @@ def run_step(args, first):
         sh("shell", "input", "keyevent", KEYS.get(args[1], args[1]))
         print(f"key {args[1]}")
     elif cmd == "swipe":
-        do_swipe(args[1])
+        if "--until" in args:
+            # Inside a batch the hunt is a between-step look: silent when it lands, and the
+            # later step that names the same row resolves against the tree it just cached.
+            swipe_until(args[1], args[args.index("--until") + 1], until_limit(args), quiet=True)
+        else:
+            do_swipe(args[1])
     elif cmd == "wait-idle":
         timeout = float(args[args.index("--timeout") + 1]) if "--timeout" in args else 5.0
         print("idle" if wait_idle(timeout) else "timeout (proceeding)")
@@ -1033,7 +1095,13 @@ def main():
     elif cmd == "key":
         sh("shell", "input", "keyevent", KEYS.get(a[1], a[1])); print(f"key {a[1]}")
     elif cmd == "swipe":
-        do_swipe(a[1])
+        if "--until" in a:
+            # The scan printed the tree that answers the question the trailing look would have
+            # asked, off the same dump — observing again would buy the screen twice in one turn.
+            observe = False
+            swipe_until(a[1], a[a.index("--until") + 1], until_limit(a))
+        else:
+            do_swipe(a[1])
     elif cmd == "run":
         find = a[a.index("--find") + 1] if "--find" in a else None
         run_batch(a[1], find=find, observe="-n" not in a and "--no-see" not in a)
